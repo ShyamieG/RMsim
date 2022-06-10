@@ -242,6 +242,10 @@ run.RM <- function(N_h,
           inf_record[inf_record$infected %in% cleared & is.na(inf_record$end_t),"end_t"] <- t
         }
       }
+      # If no active infections remain, end simulation
+      if (sum(indiv_status[,t])==0) {
+        stop(paste("Simulation ended on day", t, " - no active infections remaining."))
+      }
     }
   }
 
