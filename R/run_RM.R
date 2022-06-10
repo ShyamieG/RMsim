@@ -244,7 +244,8 @@ run.RM <- function(N_h,
       }
       # If no active infections remain, end simulation
       if (sum(indiv_status[,t])==0) {
-        stop(paste("Simulation ended on day", t, " - no active infections remaining."))
+        cat(paste("Simulation ended on day", t, "- no active infections remaining.\n"))
+        break
       }
     }
   }
