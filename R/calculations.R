@@ -69,7 +69,6 @@ calc.trans.rates <- function(lag,
 #' @param eff_vh_trans_rate 'effective' vector-to-host transmission rate (see [calc.trans.rates()])
 #' @param h_rec_rate per day host recovery rate
 #' @param v_rec_rate per day vector recovery rate (or, more realistically, per day vector death rate)
-#' @seealso [calc.trans.rates()]
 #' @returns A named list where `h_inf_rate` is the host infection rate, `v_inf_rate` is the vector infection rate, `H_eq` is the expected proportion of the host population that is infected at equilibrium, and `V_eq` is the expected proportion of the vector population that is infected at equilibrium.
 #' @examples
 #' ## calculate Ross-Macdonald parameters corresponding to a host to vector ratio of 1:5, a per day vector bite rate of 0.3, an 'effective' host to vector transmission rate of 0.1, an 'effective' vector to host transmission rate of 0.2, a per day host recovery rate of 0.01, and a per day vector death rate of 0.05

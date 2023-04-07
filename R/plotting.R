@@ -1,9 +1,8 @@
-#' @title Plot proportion infected over time
-#' @description Generates a plot of the actual and expected proportions of the host and vector populations that are infected over the duration of the simulation given the output of `run.RM()`.
+#' @title Plot infected proportion over time
+#' @description Generates a plot of the actual and expected proportions of the host and vector populations that are infected over the duration of the simulation.
 #' @usage plot.inf.over.time(RM_out, scale_y_axis = T, plot_hosts = T, plot_vectors = T, h_col = "#9A5EA1", v_col = "#98823C")
 #' @details
-#' asdf.\cr\cr
-#' asdf.
+#' Parses the result of `run.RM()` to plot the proportion of host and vector population that are infected at each time step of the simulation. The expected values of these parameters, calculated from the underlying Ross-Macdonald equations, are also plotted to facilitate comparison.
 #' @param RM_out object containing the results of a Ross-Macdonald simulation (output of `run.RM()`)
 #' @param scale_y_axis if TRUE, the y-axis is scaled according to the values in RM_out. If FALSE, the y-axis range is set to c(0,1). Default is TRUE.
 #' @param plot_hosts if TRUE, the host values are plotted. Default is TRUE.
@@ -12,9 +11,9 @@
 #' @param v_col desired colour for plotting the vector data
 #' @examples
 #' ## plot the results of the basic Ross-Macdonald simulation example
-#'  plot.inf.over.time(RM_out_basic_sim)
-#'  plot.inf.over.time(RM_out_basic_sim, scale_y_axis = F)
-#'  plot.inf.over.time(RM_out_basic_sim, plot_hosts = F)
+#'  plot.inf.over.time(RMsim::RM_out_basic_sim)
+#'  plot.inf.over.time(RMsim::RM_out_basic_sim, scale_y_axis = F)
+#'  plot.inf.over.time(RMsim::RM_out_basic_sim, plot_hosts = F)
 #' @export
 plot.inf.over.time <- function(RM_out, scale_y_axis=T, plot_hosts=T, plot_vectors=T, h_col="#9A5EA1", v_col="#98823C") {
   indiv_status <- RM_out$indiv_status
@@ -73,11 +72,14 @@ plot.inf.over.time <- function(RM_out, scale_y_axis=T, plot_hosts=T, plot_vector
   }
 }
 
-#' @title Plot proportion infected at equilibrium
-#' @description asdf
-#' @usage asdf
+#' @title Plot infected proportion at equilibrium
+#' @description Generates a histogram of the actual proportions of the host and vector populations that are infected following a specified burn-in period.
+#' @usage plot.inf.histogram(RM_out, days_of_burn_in=NULL, scale_x_axis=T, plot_hosts=T, plot_vectors=T, phases=NULL, observed_col="red")
 #' @details asdf
-#' asdf.\cr\cr
+#' Parses the result of `run.RM()` to plot a histogram of the proportion of host and vector population that are infected at each time step of the simulation. Note that these data will be significantly auto-correlated. Nevertheless, this function allows users to visualize how well the results of the stochastic simulation match with the theoretical expectation.\cr\cr
+#' The `days_of_burn_in` and `phases` arguments allow users to specify a particular time span of the simulation. `days_of_burn_in` should be chosen so as to trim out the early portion of a simulation when equilibrium has not yet been reached. Viewing the result of [plot.inf.over.time()] can help users choose this value.\cr\cr
+#' The mean and standard deviation of the distribution.\cr\cr
+#' The expected values of these parameters, calculated from the underlying Ross-Macdonald equations, are also plotted to facilitate comparison.
 #' asdf.
 #' @param RM_out object containing the results of a Ross-Macdonald simulation (output of `run.RM()`)
 #' @param days_of_burn_in description
@@ -88,9 +90,9 @@ plot.inf.over.time <- function(RM_out, scale_y_axis=T, plot_hosts=T, plot_vector
 #' @param observed_col description
 #' @examples
 #' ## plot the results of the basic Ross-Macdonald simulation example
-#'  plot.inf.histogram(RM_out_basic_sim, days_of_burn_in = 400)
-#'  plot.inf.histogram(RM_out_basic_sim, scale_y_axis = F)
-#'  plot.inf.histogram(RM_out_basic_sim, plot_hosts = F)
+#'  plot.inf.histogram(RMsim::RM_out_basic_sim, days_of_burn_in = 400)
+#'  plot.inf.histogram(RMsim::RM_out_basic_sim, scale_y_axis = F)
+#'  plot.inf.histogram(RMsim::RM_out_basic_sim, plot_hosts = F)
 #' @export
 plot.inf.histogram <- function(RM_out,
                                days_of_burn_in=NULL,
