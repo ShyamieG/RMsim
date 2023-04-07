@@ -48,6 +48,3 @@ This function implements the fundamental Ross-Macdonald equations to calculate t
  $V_eq
  [1] 0.25
 }
-\seealso{
-\code{\link[=calc.trans.rates]{calc.trans.rates()}}
-}

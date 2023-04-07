@@ -2,9 +2,9 @@
 % Please edit documentation in R/plotting.R
 \name{plot.inf.histogram}
 \alias{plot.inf.histogram}
-\title{Plot proportion infected at equilibrium}
+\title{Plot infected proportion at equilibrium}
 \usage{
-asdf
+plot.inf.histogram(RM_out, days_of_burn_in=NULL, scale_x_axis=T, plot_hosts=T, plot_vectors=T, phases=NULL, observed_col="red")
 }
 \arguments{
 \item{RM_out}{object containing the results of a Ross-Macdonald simulation (output of \code{run.RM()})}
@@ -22,16 +22,19 @@ asdf
 \item{observed_col}{description}
 }
 \description{
-asdf
+Generates a histogram of the actual proportions of the host and vector populations that are infected following a specified burn-in period.
 }
 \details{
 asdf
-asdf.\cr\cr
+Parses the result of \code{run.RM()} to plot a histogram of the proportion of host and vector population that are infected at each time step of the simulation. Note that these data will be significantly auto-correlated. Nevertheless, this function allows users to visualize how well the results of the stochastic simulation match with the theoretical expectation.\cr\cr
+The \code{days_of_burn_in} and \code{phases} arguments allow users to specify a particular time span of the simulation. \code{days_of_burn_in} should be chosen so as to trim out the early portion of a simulation when equilibrium has not yet been reached. Viewing the result of \code{\link[=plot.inf.over.time]{plot.inf.over.time()}} can help users choose this value.\cr\cr
+The mean and standard deviation of the distribution.\cr\cr
+The expected values of these parameters, calculated from the underlying Ross-Macdonald equations, are also plotted to facilitate comparison.
 asdf.
 }
 \examples{
 ## plot the results of the basic Ross-Macdonald simulation example
- plot.inf.histogram(RM_out_basic_sim, days_of_burn_in = 400)
- plot.inf.histogram(RM_out_basic_sim, scale_y_axis = F)
- plot.inf.histogram(RM_out_basic_sim, plot_hosts = F)
+ plot.inf.histogram(RMsim::RM_out_basic_sim, days_of_burn_in = 400)
+ plot.inf.histogram(RMsim::RM_out_basic_sim, scale_y_axis = F)
+ plot.inf.histogram(RMsim::RM_out_basic_sim, plot_hosts = F)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting.R
 \name{plot.inf.over.time}
 \alias{plot.inf.over.time}
-\title{Plot proportion infected over time}
+\title{Plot infected proportion over time}
 \usage{
 plot.inf.over.time(RM_out, scale_y_axis = T, plot_hosts = T, plot_vectors = T, h_col = "#9A5EA1", v_col = "#98823C")
 }
@@ -20,15 +20,14 @@ plot.inf.over.time(RM_out, scale_y_axis = T, plot_hosts = T, plot_vectors = T, h
 \item{v_col}{desired colour for plotting the vector data}
 }
 \description{
-Generates a plot of the actual and expected proportions of the host and vector populations that are infected over the duration of the simulation given the output of \code{run.RM()}.
+Generates a plot of the actual and expected proportions of the host and vector populations that are infected over the duration of the simulation.
 }
 \details{
-asdf.\cr\cr
-asdf.
+Parses the result of \code{run.RM()} to plot the proportion of host and vector population that are infected at each time step of the simulation. The expected values of these parameters, calculated from the underlying Ross-Macdonald equations, are also plotted to facilitate comparison.
 }
 \examples{
 ## plot the results of the basic Ross-Macdonald simulation example
- plot.inf.over.time(RM_out_basic_sim)
- plot.inf.over.time(RM_out_basic_sim, scale_y_axis = F)
- plot.inf.over.time(RM_out_basic_sim, plot_hosts = F)
+ plot.inf.over.time(RMsim::RM_out_basic_sim)
+ plot.inf.over.time(RMsim::RM_out_basic_sim, scale_y_axis = F)
+ plot.inf.over.time(RMsim::RM_out_basic_sim, plot_hosts = F)
 }
