@@ -2,6 +2,7 @@
 
 export(calc.RM.params)
 export(calc.trans.rates)
+export(generate.SLiM.input)
 export(plot_inf.histogram)
 export(plot_inf.over.time)
 export(prune.infection.record)
