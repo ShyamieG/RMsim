@@ -25,6 +25,7 @@ prune.infection.record <- function(inf_record, focal_infections) {
   return(pruned_inf_record)
 }
 
+#' @export
 # convert pruned output to format needed by SLiM-based pipeline
 generate.SLiM.input <- function(pruned_inf_record, sim_params) {
   output <- as.data.frame(t(sapply(X=unique(pruned_inf_record$origin_inf),
