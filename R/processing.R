@@ -49,15 +49,6 @@ generate.SLiM.input <- function(pruned_inf_record, sim_params) {
   return(output)
 }
 
-# 'rewinds' a Ross-Macdonald simulation by removing any events beyond the specified runtime
-### TBD - need to modify input/RM parameter table accordingly
-rewind.RM <- function(dat, runtime) {
-  dat$indiv_status <- dat$indiv_status[,1:runtime]
-  dat$infection_record <- dat$infection_record[dat$infection_record$start_t <= runtime,]
-  dat$infection_record[dat$infection_record$end_t > runtime, "end_t"] <- NA
-  return(dat)
-}
-
 # sub-function of generate.SLiM.input()
 populate.SLiM.table <- function(pruned_inf_record, inf_id) {
   # Filter to infections that resulted from inf_id
@@ -95,4 +86,67 @@ populate.SLiM.table <- function(pruned_inf_record, inf_id) {
               paste(RM_start_times, collapse=";"),
               paste(start_times, collapse=";"))
   return(output)
+}
+
+# adds sampling events to a Ross-Macdonald simulation
+sample.RM <- function(RM_out,
+                      time_step,
+                      population=c("H", "V", "both"),
+                      proportion=NULL,
+                      number=NULL,
+                      sample_post_lag=TRUE,
+                      resample_possible=TRUE) {
+  # Check values
+  population <- match.arg(population)
+  if (is.null(proportion) & is.null(number)) {
+    stop("Either the 'proportion' of the infected population or the 'number' of samples must be specified.")
+  }  else if (!is.null(proportion) & !is.null(number)) {
+    stop("'proportion' and 'number' cannot both be specified.")
+  }
+  phase <- which(RM_out$input_parameters["t_start", ] <= time_step & RM_out$input_parameters["t_end", ] >= time_step)
+  inf_record <- RM_out$infection_record
+  if (sample_post_lag) {
+    lag <- RM_out$input_parameters[paste0(tolower(population), "_lag"), phase]
+    dat <- inf_record[inf_record$start_t + lag <= time_step  & inf_record$end_t >= time_step,]
+  } else {
+    dat <- inf_record[inf_record$start_t <= time_step & inf_record$end_t >= time_step,]
+  }
+  if (population != "both") {
+    dat <- dat[grep(population, dat$infected),]
+  }
+  if (resample_possible == FALSE) {
+    already.sampled <- inf_record[inf_record$infected=="sample", "origin_inf"]
+    dat <- dat[-which(dat$inf_id %in% already.sampled),]
+  }
+  if (!is.null(proportion)) {
+    sample.size <- as.integer(nrow(dat)*as.numeric(proportion))
+  }
+  if (!is.null(number)) {
+    if (nrow(dat) < number) {
+      warning(paste0("Not enough infected individuals present to sample ", number, ". Sampling all ", nrow(dat), " infections instead."))
+      sample.size <- nrow(dat)
+    } else {
+      sample.size <- number
+    }
+  }
+  if (sample.size < 1) {
+    warning("Less than 1 infection chosen for sampling. Returning original RM_out object unchanged.")
+    return(RM_out)
+  } else {
+    infs_to_sample <- dat[sample(dat$inf_id, size=sample.size),]
+    sample_inf_record <- as.data.frame(cbind((nrow(inf_record)+1):(nrow(inf_record)+nrow(infs_to_sample)), infs_to_sample$inf_id, infs_to_sample$infected, rep("sample", nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample))))
+    inf_record[(nrow(inf_record)+1):(nrow(inf_record)+nrow(infs_to_sample)),] <- sample_inf_record
+    inf_record$start_t <- as.numeric(inf_record$start_t);inf_record$end_t <- as.numeric(inf_record$end_t)
+    RM_out$infection_record <- inf_record
+    return(RM_out)
+  }
+}
+
+# 'rewinds' a Ross-Macdonald simulation by removing any events beyond the specified runtime
+### TBD - need to modify input/RM parameter table accordingly
+rewind.RM <- function(dat, runtime) {
+  dat$indiv_status <- dat$indiv_status[,1:runtime]
+  dat$infection_record <- dat$infection_record[dat$infection_record$start_t <= runtime,]
+  dat$infection_record[dat$infection_record$end_t > runtime, "end_t"] <- NA
+  return(dat)
 }

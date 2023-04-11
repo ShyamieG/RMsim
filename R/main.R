@@ -18,7 +18,6 @@ run.RM <- function(N_h,
                    mean_hyp=0,
                    hyp_act_rate=NULL,
                    hyp_death_rate=NULL,
-                   sampling_df=NULL,
                    prev_sim_output=NULL) {
   `%nin%` <- Negate(`%in%`)
 
@@ -97,7 +96,7 @@ run.RM <- function(N_h,
   hIDs <- paste0(rep("H", N_h), 1:N_h)
   vIDs <- paste0(rep("V", N_v), 1:N_v)
 
-  # Create dataframe to store infection record
+  # Create data frame to store infection record
   if (is.null(prev_sim_output)) {
     inf_record <- as.data.frame(matrix(ncol=6, nrow=0))
     colnames(inf_record) <- c("inf_id","origin_inf","infector", "infected","start_t","end_t")
@@ -137,38 +136,57 @@ run.RM <- function(N_h,
 
   # Store parameters
   if (is.null(prev_sim_output)) {
-    # store input parameters
-    input_params <- as.data.frame(matrix(ncol=1, nrow=19))
-    rownames(input_params) <- c("runtime", "N_h", "N_h_t0", "N_v", "N_v_t0", "bite_rate", "raw_hv_trans_rate", "raw_vh_trans_rate", "eff_hv_trans_rate", "eff_vh_trans_rate", "h_rec_rate", "v_rec_rate", "h_max_duration", "v_max_duration", "h_lag", "v_lag", "mean_hyp", "hyp_death_rate", "hyp_act_rate")
+    # create data frame to store input parameters
+    input_params <- as.data.frame(matrix(ncol=1, nrow=21))
+    t_start <- 1
+    t_end <- runtime
+    rownames(input_params) <- c("t_start", "t_end", "runtime", "N_h", "N_h_t0", "N_v", "N_v_t0", "bite_rate", "raw_hv_trans_rate", "raw_vh_trans_rate", "eff_hv_trans_rate", "eff_vh_trans_rate", "h_rec_rate", "v_rec_rate", "h_max_duration", "v_max_duration", "h_lag", "v_lag", "mean_hyp", "hyp_death_rate", "hyp_act_rate")
     for (i in rownames(input_params)) {
       if (!is.null(get(i))) {
         input_params[i, ncol(input_params)] <- get(i)
       }
     }
-    # store Ross-Macdonald parameters
-    RM_params <- as.data.frame(matrix(ncol=1, nrow=6))
-    rownames(RM_params) <- c("t_start", "t_end", "h_inf_rate", "v_inf_rate", "H_eq", "V_eq")
-    RM_params[c("t_start", "t_end"), ncol(RM_params)] <- c(1, runtime)
-    for (i in rownames(RM_params)[-(1:2)]) {
+    # create data frame to store Ross-Macdonald parameters
+    RM_params <- as.data.frame(matrix(ncol=1, nrow=4))
+    rownames(RM_params) <- c("h_inf_rate", "v_inf_rate", "H_eq", "V_eq")
+    for (i in rownames(RM_params)) {
       if (!is.null(get(i))) {
         RM_params[i, ncol(RM_params)] <- get(i)
       }
     }
   } else {
     input_params <- prev_sim_output$input_parameters
+    previous.phase <- ncol(input_params)
+    current.phase <- ncol(input_params) + 1
+    t_start <- input_params["t_end",  previous.phase] + 1
+    t_end <- t_start + runtime - 1
     # store input parameters
-    new_col = ncol(input_params)+1
     for (i in rownames(input_params)) {
       if (!is.null(get(i))) {
-        input_params[i, new_col] <- get(i)
+        input_params[i, current.phase] <- get(i)
       }
     }
-    # store Ross-Macdonald parameters
+    # if two subsequent phases have identical parameters, merge them
+    param_identity_check <- 0
+    for (i in 4:21) {
+      if (input_params[i, previous.phase] == input_params[i, current.phase] | (is.na(input_params[i, previous.phase]) & is.na(input_params[i, current.phase]))) {
+        param_identity_check <- param_identity_check + 1
+      }
+    }
+    if (param_identity_check == 18) {
+      t_end <- input_params["t_end", current.phase]
+      new_runtime <- input_params["runtime", previous.phase] + input_params["runtime", current.phase]
+      new_input_params <- data.frame(input_params[,-current.phase]);colnames(new_input_params) <- colnames(input_params)[-current.phase];rownames(new_input_params) <- row.names(input_params);input_params <- new_input_params
+      current.phase <- previous.phase
+      input_params[c("t_end", "runtime"), current.phase] <- c(t_end, new_runtime)
+    }
+    # store Ross-Macdonald parameters for new phase
     RM_params <- prev_sim_output$RM_parameters
-    RM_params[c("t_start", "t_end"), new_col] <- c(ncol(indiv_status)+1, ncol(indiv_status)+runtime)
-    for (i in rownames(RM_params)[-(1:2)]) {
-      if (!is.null(get(i))) {
-        RM_params[i, ncol(RM_params)] <- get(i)
+    if (current.phase > previous.phase) {
+      for (i in rownames(RM_params)) {
+        if (!is.null(get(i))) {
+          RM_params[i, current.phase] <- get(i)
+        }
       }
     }
   }
@@ -296,12 +314,12 @@ run.RM <- function(N_h,
           }
           # Clear infections from individuals that have recently emigrated
           if (!is.null(prev_sim_output) & t == time.steps[1]) {
-            if (input_params["N_h",ncol(input_params)-1] > input_params["N_h",ncol(input_params)]) {
+            if (input_params["N_h", previous.phase] > input_params["N_h", current.phase]) {
               emigrants <- old_hIDs[old_hIDs %nin% hIDs]
               indiv_status[emigrants, t] <- 0
               inf_record[inf_record$infected %in% emigrants & is.na(inf_record$end_t), "end_t"] <- t
             }
-            if (input_params["N_v",ncol(input_params)-1] > input_params["N_v",ncol(input_params)]) {
+            if (input_params["N_v", previous.phase] > input_params["N_v", current.phase]) {
               emigrants <- old_vIDs[old_vIDs %nin% vIDs]
               indiv_status[emigrants, t] <- 0
               inf_record[inf_record$infected %in% emigrants & is.na(inf_record$end_t), "end_t"] <- t
@@ -321,23 +339,6 @@ run.RM <- function(N_h,
           message(paste("Simulation ended on day", t, "- no active or dormant infections remaining."))
         }
       }
-
-      # Sample infected individuals, if specified
-      if (!is.null(sampling_df)) {
-        if (t %in% sampling_df$t) {
-          sampling_t <- sampling_df[sampling_df$t==t,]
-          # Extract individuals that are currently infected
-          dat <- inf_record[is.na(inf_record$end_t), ]
-          for (i in 1:nrow(sampling_t)) {
-            matching_rows <- grep(sampling_t[i, "pop"], dat$infected)
-            samples <- dat[sample(matching_rows, size=length(matching_rows)*as.numeric(sampling_t$proportion[i])),]
-            if (nrow(samples) > 0) {
-              dat.new <- as.data.frame(cbind((nrow(inf_record)+1):(nrow(inf_record)+nrow(samples)), samples$inf_id, samples$infected, rep("sample", nrow(samples)), rep(t, nrow(samples)), rep(t, nrow(samples))))
-              inf_record[(nrow(inf_record)+1):(nrow(inf_record)+nrow(samples)),] <- dat.new
-            }
-          }
-        }
-      }
     }
 
     # Fix, store, and return output at the end of the simulation
@@ -347,9 +348,6 @@ run.RM <- function(N_h,
       output <- list(input_parameters=input_params, RM_parameters=RM_params, indiv_status=indiv_status, infection_record=inf_record)
       if (mean_hyp > 0) {
         output <- append(output, list(hyp_reservoir=hyp_reservoir, n_hypno=n_hypno))
-      }
-      if (!is.null(sampling_df)) {
-        output <- append(output, list(sampling=sampling_df))
       }
       return(output)
     }
