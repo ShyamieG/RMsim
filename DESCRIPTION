@@ -4,7 +4,10 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Shyamalika", "Gopalan", , "shyamalika.gopalan@duke.edu", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-2608-8472"))
-Description: This package performs simulations of infection scenarios under Ross-Macdonald models.
+Description: This package performs stochastic simulations of infection scenarios under Ross-Macdonald models.
+Imports:
+	MESS,
+	furrr
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
