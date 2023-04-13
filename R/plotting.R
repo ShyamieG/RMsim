@@ -31,9 +31,9 @@ plot_inf.over.time <- function(RM_out, scale_y_axis=T, plot_hosts=T, plot_vector
     pops <- c()
     if (plot_hosts==T) {pops <- c(pops, "H")}
     if (plot_vectors==T) {pops <- c(pops, "V")}
-    for (i in 1:ncol(RM_params)) {
+    for (i in 1:ncol(input_params)) {
       for (j in pops) {
-        Ylim <- c(min(c(Ylim[1], apply(indiv_status[grep(j, rownames(indiv_status)), RM_params["t_start", i]:RM_params["t_end", i]], MARGIN=2, FUN=sum)/input_params[paste0("N_", tolower(j)), i]), na.rm=T), max(c(Ylim[2], apply(indiv_status[grep(j, rownames(indiv_status)), RM_params["t_start", i]:RM_params["t_end", i]], MARGIN=2, FUN=sum)/input_params[paste0("N_", tolower(j)), i]), na.rm=T))
+        Ylim <- c(min(c(Ylim[1], apply(indiv_status[grep(j, rownames(indiv_status)), input_params["t_start", i]:input_params["t_end", i]], MARGIN=2, FUN=sum)/input_params[paste0("N_", tolower(j)), i]), na.rm=T), max(c(Ylim[2], apply(indiv_status[grep(j, rownames(indiv_status)), input_params["t_start", i]:input_params["t_end", i]], MARGIN=2, FUN=sum)/input_params[paste0("N_", tolower(j)), i]), na.rm=T))
       }
     }
     Ylim <- c(floor(Ylim[1] * 5)/5, ceiling(Ylim[2] * 5)/5)

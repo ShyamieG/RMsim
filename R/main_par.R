@@ -1,24 +1,24 @@
 #' @export
-run.RM <- function(N_h,
-                   N_h_t0=NULL,
-                   N_v,
-                   N_v_t0=NULL,
-                   runtime,
-                   bite_rate,
-                   raw_hv_trans_rate=NULL,
-                   raw_vh_trans_rate=NULL,
-                   eff_hv_trans_rate=NULL,
-                   eff_vh_trans_rate=NULL,
-                   h_rec_rate,
-                   v_rec_rate,
-                   h_lag,
-                   v_lag,
-                   h_max_duration,
-                   v_max_duration,
-                   mean_hyp=0,
-                   hyp_act_rate=NULL,
-                   hyp_death_rate=NULL,
-                   prev_sim_output=NULL) {
+run.RM.par <- function(N_h,
+                       N_h_t0=NULL,
+                       N_v,
+                       N_v_t0=NULL,
+                       runtime,
+                       bite_rate,
+                       raw_hv_trans_rate=NULL,
+                       raw_vh_trans_rate=NULL,
+                       eff_hv_trans_rate=NULL,
+                       eff_vh_trans_rate=NULL,
+                       h_rec_rate,
+                       v_rec_rate,
+                       h_lag,
+                       v_lag,
+                       h_max_duration,
+                       v_max_duration,
+                       mean_hyp=0,
+                       hyp_act_rate=NULL,
+                       hyp_death_rate=NULL,
+                       prev_sim_output=NULL) {
   ### DELETE
   size <- matrix(ncol=4, nrow=runtime);colnames(size) <- c("indiv_status", "inf_record", "hyp_reservoir", "n_hypno")
   ### DELETE
@@ -243,14 +243,14 @@ run.RM <- function(N_h,
     } else {
       # -- Step 1 - All vectors bite hosts, transmitting and/or becoming infected
       # Simulate vector biting
-      dat <- lapply(X=vIDs, FUN=sim.vector.biting,
-                    hIDs=hIDs, t=t,
-                    bite_rate=bite_rate,
-                    vh_trans_rate=raw_vh_trans_rate,
-                    hv_trans_rate=raw_hv_trans_rate,
-                    h_lag=h_lag, v_lag=v_lag,
-                    prev_indiv_status=indiv_status[,paste0("T",(t-1))],
-                    inf_record=inf_record)
+      dat <- furrr::future_map(vIDs, .options=furrr::furrr_options(seed = T),
+                               ~sim.vector.biting(v=.x, hIDs=hIDs, t=t,
+                                                  bite_rate=bite_rate,
+                                                  vh_trans_rate=raw_vh_trans_rate,
+                                                  hv_trans_rate=raw_hv_trans_rate,
+                                                  h_lag=h_lag, v_lag=v_lag,
+                                                  prev_indiv_status=indiv_status[,paste0("T",(t-1))],
+                                                  inf_record=inf_record))
       # Record infections
       new_infections <- as.data.frame(do.call(rbind, dat));rm(dat)
       if (nrow(new_infections) > 0) {
