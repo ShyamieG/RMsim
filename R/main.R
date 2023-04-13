@@ -356,7 +356,7 @@ run.RM <- function(N_h,
     if (t == max(time.steps)) {
       inf_record$start_t <- as.numeric(inf_record$start_t)
       inf_record$end_t <- as.numeric(inf_record$end_t)
-      output <- list(size=size, input_parameters=input_params, RM_parameters=RM_params, indiv_status=indiv_status, infection_record=inf_record)
+      output <- list(input_parameters=input_params, RM_parameters=RM_params, indiv_status=indiv_status, infection_record=inf_record)
       if (mean_hyp > 0) {
         output <- append(output, list(hyp_reservoir=hyp_reservoir, n_hypno=n_hypno))
       }
