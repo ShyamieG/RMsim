@@ -19,10 +19,7 @@ run.RM <- function(N_h,
                    hyp_act_rate=NULL,
                    hyp_death_rate=NULL,
                    prev_sim_output=NULL) {
-  ### DELETE
-  size <- matrix(ncol=4, nrow=runtime);colnames(size) <- c("indiv_status", "inf_record", "hyp_reservoir", "n_hypno")
-  ### DELETE
-  `%nin%` <- Negate(`%in%`)
+    `%nin%` <- Negate(`%in%`)
 
   # Check number of seed individuals
   if (is.null(prev_sim_output)) {
@@ -212,13 +209,6 @@ run.RM <- function(N_h,
   }
 
   for (t in time.steps) {
-    #### DELETE
-    if (mean_hyp > 0) {
-      size[t,] <- c(as.numeric(object.size(indiv_status)), as.numeric(object.size(inf_record)), as.numeric(object.size(hyp_reservoir)), as.numeric(object.size(n_hypno)))
-    } else {
-      size[t, 1:2] <- c(as.numeric(object.size(indiv_status)), as.numeric(object.size(inf_record)))
-    }
-    ### DELETE
     if (t == 1) {
       # -- Step 0 - Initialize w/ infected hosts/vectors
       indiv_status[,"T1"] <- 0
