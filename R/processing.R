@@ -88,6 +88,7 @@ populate.SLiM.table <- function(pruned_inf_record, inf_id) {
   return(output)
 }
 
+#' @export
 # adds sampling events to a Ross-Macdonald simulation
 sample.RM <- function(RM_out,
                       time_step,

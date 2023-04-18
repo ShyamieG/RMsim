@@ -18,7 +18,8 @@ run.RM <- function(N_h,
                    mean_hyp=0,
                    hyp_act_rate=NULL,
                    hyp_death_rate=NULL,
-                   prev_sim_output=NULL) {
+                   prev_sim_output=NULL,
+                   verbose=T) {
     `%nin%` <- Negate(`%in%`)
 
   # Check number of seed individuals
@@ -249,7 +250,7 @@ run.RM <- function(N_h,
         if (length(co_infected) > 0) {
           co_infected <- names(table(new_infections$infected))[co_infected]
           if (length(co_infected)>1) {msg_plural="s";msg_were="were"} else {msg_plural="";msg_were="was"}
-          message(paste0("WARNING: ", length(co_infected), " co-infection", msg_plural, " in time step ", t, " ", msg_were, " simplified"))
+          if (verbose == T){message(paste0(length(co_infected), " co-infection", msg_plural, " in time step ", t, " ", msg_were, " simplified"))}
           new_infections <- rbind(new_infections[-which(new_infections$infected %in% co_infected),], new_infections[match(co_infected, new_infections$infected),])
         }
         rownames(new_infections) <- (nrow(inf_record)+1):(nrow(inf_record)+nrow(new_infections))
@@ -318,7 +319,7 @@ run.RM <- function(N_h,
           if (length(too_long) > 0) {
             type.full <- c("host", "vector")[match(type, c("h", "v"))]
             if (length(too_long)>1) {msg_plural="s";msg_were="were"} else {msg_plural="";msg_were="was"}
-            message(paste0("WARNING: ", length(too_long), " ", type.full, " infection", msg_plural, " ", msg_were, " forcibly terminated in time step ", t))
+            if (verbose == T){message(paste0(length(too_long), " ", type.full, " infection", msg_plural, " ", msg_were, " forcibly terminated in time step ", t))}
             indiv_status[too_long, paste0("T", t)] <- 0
           }
           # Clear infections from individuals that have recently emigrated

@@ -109,7 +109,7 @@ sim.hypno.activation <- function(h, t,
   activated_hypnozoite <- hypnozoites[rbinom(length(hypnozoites), 1, hyp_act_rate) == 1]
   # If more than one activates, choose just one
   if (length(activated_hypnozoite) > 1) {
-    message(paste0("WARNING: ", length(activated_hypnozoite)," hypnozoites were activated in time step ", t, " - only 1 was kept"))
+    if (verbose == T){message(paste0(length(activated_hypnozoite)," hypnozoites were activated in time step ", t, " - only 1 was kept"))}
     activated_hypnozoite <- sample(activated_hypnozoite, size=1)
   }
   # Activate hypnozoites
