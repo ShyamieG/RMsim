@@ -6,7 +6,8 @@ sample.RM <- function(RM_out,
                       proportion=NULL,
                       number=NULL,
                       sample_post_lag=TRUE,
-                      resample_possible=TRUE) {
+                      resample_possible=TRUE,
+                      sort_events=TRUE) {
   # Check values
   population <- match.arg(population)
   if (is.null(proportion) & is.null(number)) {
@@ -65,6 +66,9 @@ sample.RM <- function(RM_out,
     inf_record[(nrow(inf_record)+1):(nrow(inf_record)+nrow(infs_to_sample)),] <- sample_inf_record
     inf_record$start_t <- as.numeric(inf_record$start_t);inf_record$end_t <- as.numeric(inf_record$end_t)
     RM_out$infection_record <- inf_record
+    if (sort_events) {
+      RM_out$infection_record <- RM_out$infection_record[order(RM_out$infection_record$start_t),]
+    }
     return(RM_out)
   }
 }
