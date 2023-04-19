@@ -85,13 +85,14 @@ prune.infection.record <- function(inf_record) {
   # Determine seed infections
   seed_infs <- inf_record[grep("seed", inf_record$infector), "inf_id"]
   keep_infs <- c()
-  # Loop over each focal infection and trace back until a seed infection is reached
+  # Loop over each sample infection and trace back until a seed infection is reached
   for (i in sample_infections) {
-    j <- i
     j_inf_history <- c()
+    j <- i
     while (j %ni% c(seed_infs, keep_infs)) {
       # update j
       j <- inf_record[inf_record$inf_id==j, "origin_inf"]
+      if (j == "125644") {print(i)}
       # keep this infection in pruned record
       j_inf_history[length(j_inf_history)+1] <- j
     }
@@ -99,9 +100,8 @@ prune.infection.record <- function(inf_record) {
   }
   # Keep all focal transmissions
   keep_infs[(length(keep_infs)+1):(length(keep_infs)+length(sample_infections))] <- sample_infections
-  # Sort and remove duplicates
-  keep_infs <- sort(unique(as.numeric(keep_infs)))
-  pruned_inf_record <- inf_record[keep_infs,]
+  # Remove duplicates
+  pruned_inf_record <- inf_record[inf_record$inf_id %in% unique(keep_infs),]
   return(pruned_inf_record)
 }
 
