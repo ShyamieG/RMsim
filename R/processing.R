@@ -111,7 +111,7 @@ sample.RM <- function(RM_out,
       for (p in c("H", "V")) {
         h_lag <- RM_out$input_parameters["h_lag", phase]
         v_lag <- RM_out$input_parameters["v_lag", phase]
-        dat <- rbind(inf_record[intersect(grep("H", inf_record$infected), which(inf_record$start_t + h_lag <= time_step  & inf_record$end_t >= time_step),], inf_record[intersect(grep("V", inf_record$infected), which(inf_record$start_t + v_lag <= time_step  & inf_record$end_t >= time_step),])
+        dat <- rbind(inf_record[intersect(grep("H", inf_record$infected), which(inf_record$start_t + h_lag <= time_step  & inf_record$end_t >= time_step)),], inf_record[intersect(grep("V", inf_record$infected), which(inf_record$start_t + v_lag <= time_step  & inf_record$end_t >= time_step)),])
       }
     } else {
       lag <- RM_out$input_parameters[paste0(tolower(population), "_lag"), phase]
