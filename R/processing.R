@@ -56,9 +56,9 @@ sample.RM <- function(RM_out,
     warning("Less than 1 infection chosen for sampling. Returning original RM_out object unchanged.")
     return(RM_out)
   } else {
-    if (resample_possible == TRUE) {
+    if (resample_possible) {
       infs_to_sample <- dat[sample(dat$inf_id, size=sample.size, replace=T),]
-    } else if (resample_possible == FALSE) {
+    } else {
       infs_to_sample <- dat[sample(dat$inf_id, size=sample.size, replace=F),]
     }
     sample_inf_record <- as.data.frame(cbind((nrow(inf_record)+1):(nrow(inf_record)+nrow(infs_to_sample)), infs_to_sample$inf_id, infs_to_sample$infected, rep("sample", nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample))))
