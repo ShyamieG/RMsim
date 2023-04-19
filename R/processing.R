@@ -123,7 +123,7 @@ sample.RM <- function(RM_out,
     sample.size <- as.integer(nrow(dat)*as.numeric(proportion))
   }
   if (!is.null(number)) {
-    if (nrow(dat) < number) {
+    if (nrow(dat) < number & resample_possible == FALSE) {
       warning(paste0("Not enough infected individuals present to sample ", number, ". Sampling all ", nrow(dat), " infections instead."))
       sample.size <- nrow(dat)
     } else {
@@ -134,7 +134,11 @@ sample.RM <- function(RM_out,
     warning("Less than 1 infection chosen for sampling. Returning original RM_out object unchanged.")
     return(RM_out)
   } else {
-    infs_to_sample <- dat[sample(dat$inf_id, size=sample.size),]
+    if (resample_possible == TRUE) {
+      infs_to_sample <- dat[sample(dat$inf_id, size=sample.size, replace=T),]
+    } else if (resample_possible == FALSE) {
+      infs_to_sample <- dat[sample(dat$inf_id, size=sample.size, replace=F),]
+    }
     sample_inf_record <- as.data.frame(cbind((nrow(inf_record)+1):(nrow(inf_record)+nrow(infs_to_sample)), infs_to_sample$inf_id, infs_to_sample$infected, rep("sample", nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample))))
     inf_record[(nrow(inf_record)+1):(nrow(inf_record)+nrow(infs_to_sample)),] <- sample_inf_record
     inf_record$start_t <- as.numeric(inf_record$start_t);inf_record$end_t <- as.numeric(inf_record$end_t)
