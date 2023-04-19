@@ -1,3 +1,4 @@
+#' @export
 run.RM.par <- function(N_h,
                        N_h_t0=NULL,
                        N_v,
