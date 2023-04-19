@@ -115,17 +115,19 @@ sample.RM <- function(RM_out,
       }
     } else {
       lag <- RM_out$input_parameters[paste0(tolower(population), "_lag"), phase]
-      dat <- inf_record[inf_record$start_t + lag <= time_step  & inf_record$end_t >= time_step,]
+      dat <- inf_record[which(inf_record$start_t + lag <= time_step  & inf_record$end_t >= time_step),]
     }
   } else {
-    dat <- inf_record[inf_record$start_t <= time_step & inf_record$end_t >= time_step,]
+    dat <- inf_record[which(inf_record$start_t <= time_step & inf_record$end_t >= time_step),]
   }
   if (population != "both") {
     dat <- dat[grep(population, dat$infected),]
   }
   if (resample_possible == FALSE) {
     already.sampled <- inf_record[inf_record$infected=="sample", "origin_inf"]
-    dat <- dat[-which(dat$inf_id %in% already.sampled),]
+    if (length(already.sampled) > 0) {
+      dat <- dat[-which(dat$inf_id %in% already.sampled),]
+    }
   }
   if (!is.null(proportion)) {
     sample.size <- as.integer(nrow(dat)*as.numeric(proportion))
