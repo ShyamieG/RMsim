@@ -259,7 +259,17 @@ run.RM <- function(N_h,
 
   ## Run simulation sequentially over each time step
   ## -----------------------------------------------
+  ###### REMOVE ######
+  if (is.null(prev_sim_output)) {
+    time <- rep(NA, length(time.steps))
+  } else {
+    time <- prev_sim_output$time;length(time) <- length(time) + length(time.steps)
+  }
+  ####################
   for (x in time.steps) {
+    ###### REMOVE ######
+    start_t <- Sys.time()
+    ####################
     if (x == 1) {
       # -- Step 0 - Initialize w/ infected hosts/vectors ----
       # choose infected individuals
@@ -453,6 +463,10 @@ run.RM <- function(N_h,
       }
     }
 
+    ###### REMOVE ######
+    end_t <- Sys.time()
+    time[x] <- as.numeric(difftime(end_t, start_t, units="s"))
+    ####################
     # Fix, store, and return output at the end of the simulation
     if (x == max(time.steps)) {
       infection_record$start_t <- as.numeric(infection_record$start_t)
@@ -468,6 +482,9 @@ run.RM <- function(N_h,
           output[[i]] <- get(i)
         }
       }
+      ###### REMOVE ######
+      output <- append(output, list(time=time))
+      ####################
       return(output)
     }
   }
