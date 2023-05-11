@@ -4,33 +4,30 @@
 \alias{plot_inf.histogram}
 \title{Plot infected proportion at equilibrium}
 \usage{
-plot_inf.histogram(RM_out, days_of_burn_in=NULL, scale_x_axis=T, plot_hosts=T, plot_vectors=T, phases=NULL, observed_col="red")
+plot_inf.histogram(RM_out, days_of_burn_in = NULL, scale_x_axis = TRUE, plot_hosts = TRUE, plot_vectors = TRUE, phases = NULL, observed_col = "red")
 }
 \arguments{
 \item{RM_out}{object containing the results of a Ross-Macdonald simulation (output of \code{run.RM()})}
 
-\item{days_of_burn_in}{description}
+\item{days_of_burn_in}{the number of time steps to discard from the start of the simulation phase in calculating the empirical mean and standard deviation}
 
-\item{scale_x_axis}{description}
+\item{scale_x_axis}{if TRUE, the x-axis is scaled according to the values in RM_out. If FALSE, the x-axis range is set to c(0,1). Default is TRUE.}
 
-\item{plot_hosts}{description}
+\item{plot_hosts}{if TRUE, the trajectory of the host population will be plotted}
 
-\item{plot_vectors}{description}
+\item{plot_vectors}{if TRUE, the trajectory of the vector population will be plotted}
 
-\item{phases}{description}
+\item{phases}{which phases of the Ross-Macdonald simulation, as defined by a unique set of epidemiological parameters, should be plotted. Each distinct phase is plotted separately.}
 
-\item{observed_col}{description}
+\item{observed_col}{the colour to plot values related to the empirical distribution}
 }
 \description{
 Generates a histogram of the actual proportions of the host and vector populations that are infected following a specified burn-in period.
 }
 \details{
-asdf
 Parses the result of \code{run.RM()} to plot a histogram of the proportion of host and vector population that are infected at each time step of the simulation. Note that these data will be significantly auto-correlated. Nevertheless, this function allows users to visualize how well the results of the stochastic simulation match with the theoretical expectation.\cr\cr
-The \code{days_of_burn_in} and \code{phases} arguments allow users to specify a particular time span of the simulation. \code{days_of_burn_in} should be chosen so as to trim out the early portion of a simulation when equilibrium has not yet been reached. Viewing the result of \code{\link[=plot_inf.over.time]{plot_inf.over.time()}} can help users choose this value.\cr\cr
-The mean and standard deviation of the distribution.\cr\cr
-The expected values of these parameters, calculated from the underlying Ross-Macdonald equations, are also plotted to facilitate comparison.
-asdf.
+The \code{days_of_burn_in} and \code{phases} arguments allow users to specify a particular time period of the simulation. \code{days_of_burn_in} should be chosen so as to trim out the early portion of a simulation when equilibrium has not yet been reached. Viewing the result of \code{\link[=plot_inf.over.time]{plot_inf.over.time()}} can help users choose this value.\cr\cr
+Values related to the empirical distribution are plotted in the colour specified by \code{observed_col}; the dashed vertical line represents the mean, and the solid lines represent 1 standard deviation above and below the mean. The expected infected proportion of the population, calculated from the underlying Ross-Macdonald equations, is plotted in black to facilitate comparison.
 }
 \examples{
 ## plot the results of the basic Ross-Macdonald simulation example

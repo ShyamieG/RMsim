@@ -1,41 +1,71 @@
+#' @title Sample infected individuals from a Ross-Macdonald simulation
+#' @description Adds events to the infection record representing samples taken from infected individuals, according to user-specified parameters.
+#' @usage sample.RM(RM_out, time_step, population, proportion = NULL, number = NULL, sample_post_lag = TRUE, resample_possible = TRUE, sort_events = TRUE)
+#' @details
+#' The sampling of infected individuals is represented by a unique type of event that is included in the infection record of a Ross-Macdonald simulation. This function allows users to define the sampling scheme by specifying the time step when infected individuals should be sampled, which population (host, vector, or both) to draw samples from, whether a certain proportion of the infected population or a fixed number of individuals should be sampled, and if samples should only be drawn from individuals that are beyond the 'lag' period of their infection. Multiple samples can be drawn from the same infectious individual if `resample_possible` is set to TRUE. If `sort_events` is set to TRUE (which it is by default) the updated infection record will be sorted by `start_t` (infection start time or sample time).
+#' @param RM_out object containing the results of a Ross-Macdonald simulation (output of `run.RM()`)
+#' @param time_step the time step at which infected samples should be drawn
+#' @param population either 'H' (host) or 'V' (vector); the population to draw samples from
+#' @param proportion if specified, the proportion of the total infected population to sample
+#' @param number if specified, the number of infected individuals to sample
+#' @param sample_post_lag if TRUE, only individuals that are beyond the infection lag phase can be sampled. Default is TRUE.
+#' @param resample_possible if TRUE, infected individuals can be sampled multiple times at the same or different time points. Default is FALSE.
+#' @param sort_events if TRUE, the updated infection record with new sampling events will be sorted by `start_t`. Default is TRUE.
+#' @examples
+#' ## add samples to the basic Ross-Macdonald simulation example
+#'  set.seed(1234)
+#'  RM_sampled <- sample.RM(RM_out = RMsim::RM_out_basic_sim, time_step = 1000, population = "H", number = 5, sort_events = FALSE)
+#'  tail(RM_sampled$infection_record)
 #' @export
-# adds sampling events to a Ross-Macdonald simulation
 sample.RM <- function(RM_out,
                       time_step,
-                      population=c("H", "V", "both"),
-                      proportion=NULL,
-                      number=NULL,
-                      sample_post_lag=TRUE,
-                      resample_possible=TRUE,
-                      sort_events=TRUE) {
+                      population,
+                      proportion = NULL,
+                      number = NULL,
+                      sample_post_lag = TRUE,
+                      resample_possible = FALSE,
+                      sort_events = TRUE) {
   # Check values
-  population <- match.arg(population)
+  `%ni%` <- Negate(`%in%`)
+  if (is.null(population)) {
+    stop("\'population\' must be either \'H\' (host), \'V\' (vector), or \'both\'")
+  } else {
+    population <- unique(tolower(population))
+    if (any(population != "both" & population %ni% c("host", "vector") & population %ni% c("h", "v"))) {
+      stop("\'population\' must be either \'H\' (host), \'V\' (vector), or \'both\'")
+    }
+  }
+
   if (is.null(proportion) & is.null(number)) {
     stop("Either the 'proportion' of the infected population or the 'number' of samples must be specified.")
   }  else if (!is.null(proportion) & !is.null(number)) {
     stop("'proportion' and 'number' cannot both be specified.")
   }
-  phase <- which(RM_out$input_parameters["t_start", ] <= time_step & RM_out$input_parameters["t_end", ] >= time_step)
-  inf_record <- RM_out$infection_record
+
+  input_parameters <- RM_out$input_parameters
+  infection_record <- RM_out$infection_record
+  phase <- which(input_parameters["t_start", ] <= time_step & input_parameters["t_end", ] >= time_step)
+
+  # Re-name population elements if necessary
+  if (population == "both"){population <- c("h", "v")}
+  if (any(population %in% c("host", "vector"))) {population[population=="host"] <- "h";population[population=="vector"] <- "v"}
+
   if (sample_post_lag) {
-    if (population == "both") {
-      for (p in c("H", "V")) {
-        h_lag <- RM_out$input_parameters["h_lag", phase]
-        v_lag <- RM_out$input_parameters["v_lag", phase]
-        dat <- rbind(inf_record[intersect(grep("H", inf_record$infected), which(inf_record$start_t + h_lag <= time_step  & inf_record$end_t >= time_step)),], inf_record[intersect(grep("V", inf_record$infected), which(inf_record$start_t + v_lag <= time_step  & inf_record$end_t >= time_step)),])
-      }
-    } else {
-      lag <- RM_out$input_parameters[paste0(tolower(population), "_lag"), phase]
-      dat <- inf_record[which(inf_record$start_t + lag <= time_step  & inf_record$end_t >= time_step),]
+    dat <- NULL
+    for (p in population) {
+      lag <- input_parameters[paste0(p, "_lag"), phase]
+      ids <- paste0(toupper(p), 1:input_parameters[paste0("N_", p), phase])
+      dat <- rbind(dat, infection_record[infection_record$infected %in% ids & infection_record$start_t + lag < time_step & (infection_record$end_t >= time_step | is.na(infection_record$end_t)),])
     }
   } else {
-    dat <- inf_record[which(inf_record$start_t <= time_step & inf_record$end_t >= time_step),]
+    dat <- infection_record[infection_record$start_t < time_step & (infection_record$end_t >= time_step | is.na(infection_record$end_t)),]
+    if (population != "both") {
+      dat <- dat[grep(population, dat$infected),]
+    }
   }
-  if (population != "both") {
-    dat <- dat[grep(population, dat$infected),]
-  }
+
   if (resample_possible == FALSE) {
-    already.sampled <- inf_record[inf_record$infected=="sample", "origin_inf"]
+    already.sampled <- infection_record[infection_record$infected=="sample", "origin_inf"]
     if (length(already.sampled) > 0) {
       dat <- dat[-which(dat$inf_id %in% already.sampled),]
     }
@@ -62,28 +92,28 @@ sample.RM <- function(RM_out,
     } else {
       infs_to_sample <- dat[sample(dat$inf_id, size=sample.size, replace=F),]
     }
-    sample_inf_record <- as.data.frame(cbind((nrow(inf_record)+1):(nrow(inf_record)+nrow(infs_to_sample)), infs_to_sample$inf_id, infs_to_sample$infected, rep("sample", nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample))))
-    inf_record[(nrow(inf_record)+1):(nrow(inf_record)+nrow(infs_to_sample)),] <- sample_inf_record
-    inf_record$start_t <- as.numeric(inf_record$start_t);inf_record$end_t <- as.numeric(inf_record$end_t)
-    RM_out$infection_record <- inf_record
+    sample_infection_record <- as.data.frame(cbind((nrow(infection_record)+1):(nrow(infection_record)+nrow(infs_to_sample)), infs_to_sample$inf_id, infs_to_sample$infected, rep("sample", nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample))))
+    infection_record[(nrow(infection_record)+1):(nrow(infection_record)+nrow(infs_to_sample)),] <- sample_infection_record
+    infection_record$start_t <- as.numeric(infection_record$start_t);infection_record$end_t <- as.numeric(infection_record$end_t)
     if (sort_events) {
-      RM_out$infection_record <- RM_out$infection_record[order(RM_out$infection_record$start_t),]
+      infection_record <- infection_record[order(infection_record$start_t),]
     }
+    RM_out$infection_record <- infection_record
     return(RM_out)
   }
 }
 
 #' @export
 # remove any infections that did not contribute to the sample
-prune.infection.record <- function(inf_record) {
+prune.infection.record <- function(infection_record) {
   `%ni%` <- Negate(`%in%`)
   # Determine sample infections
-  sample_infections <- inf_record[inf_record$infected=="sample", "inf_id"]
+  sample_infections <- infection_record[infection_record$infected=="sample", "inf_id"]
   if (length(sample_infections) == 0) {
     stop("There are no samples in this infection record. Did you run sample.RM() first?")
   }
   # Determine seed infections
-  seed_infs <- inf_record[grep("seed", inf_record$infector), "inf_id"]
+  seed_infs <- infection_record[grep("seed", infection_record$infector), "inf_id"]
   keep_infs <- c()
   # Loop over each sample infection and trace back until a seed infection is reached
   for (i in sample_infections) {
@@ -91,7 +121,7 @@ prune.infection.record <- function(inf_record) {
     j <- i
     while (j %ni% c(seed_infs, keep_infs)) {
       # update j
-      j <- inf_record[inf_record$inf_id==j, "origin_inf"]
+      j <- infection_record[infection_record$inf_id==j, "origin_inf"]
       if (j == "125644") {print(i)}
       # keep this infection in pruned record
       j_inf_history[length(j_inf_history)+1] <- j
@@ -101,16 +131,16 @@ prune.infection.record <- function(inf_record) {
   # Keep all focal transmissions
   keep_infs[(length(keep_infs)+1):(length(keep_infs)+length(sample_infections))] <- sample_infections
   # Remove duplicates
-  pruned_inf_record <- inf_record[inf_record$inf_id %in% unique(keep_infs),]
-  return(pruned_inf_record)
+  pruned_infection_record <- infection_record[infection_record$inf_id %in% unique(keep_infs),]
+  return(pruned_infection_record)
 }
 
 #' @export
 # convert pruned output to format needed by SLiM-based pipeline
-generate.SLiM.input <- function(pruned_inf_record, sim_params) {
-  output <- as.data.frame(t(sapply(X=unique(pruned_inf_record$origin_inf),
+generate.SLiM.input <- function(pruned_infection_record, sim_params) {
+  output <- as.data.frame(t(sapply(X=unique(pruned_infection_record$origin_inf),
                                    FUN=populate.SLiM.table,
-                                   pruned_inf_record=pruned_inf_record)))
+                                   pruned_infection_record=pruned_infection_record)))
   colnames(output) <- c("infection_idx", "infection_source", "infector_type", "infector_id", "infected_ids", "RM_time_start", "inf_time_start")
   rownames(output) <- 1:nrow(output)
   # fill in infection start times
@@ -130,9 +160,9 @@ generate.SLiM.input <- function(pruned_inf_record, sim_params) {
 }
 
 # sub-function of generate.SLiM.input()
-populate.SLiM.table <- function(pruned_inf_record, inf_id) {
+populate.SLiM.table <- function(pruned_infection_record, inf_id) {
   # Filter to infections that resulted from inf_id
-  dat <- pruned_inf_record[which(pruned_inf_record$origin_inf==inf_id),]
+  dat <- pruned_infection_record[which(pruned_infection_record$origin_inf==inf_id),]
   # Determine infector ID
   infector <- unique(dat$infector)
   # Determine who was infected over the course of this infection
@@ -144,11 +174,11 @@ populate.SLiM.table <- function(pruned_inf_record, inf_id) {
   # If not a seed infection...
   if (length(grep("seed", inf_id))==0) {
     # Determine origin of inf_id
-    origin <- pruned_inf_record[pruned_inf_record$inf_id==inf_id,"origin_inf"]
+    origin <- pruned_infection_record[pruned_infection_record$inf_id==inf_id,"origin_inf"]
     # Determine infector id
     infector_id <- substring(infector, 2)
     # Determine when the infector was infected in RM time
-    infector_start_time <- as.integer(pruned_inf_record[pruned_inf_record$inf_id==inf_id, "start_t"])
+    infector_start_time <- as.integer(pruned_infection_record[pruned_infection_record$inf_id==inf_id, "start_t"])
     # If a seed infection...
   } else {
     origin <- NA

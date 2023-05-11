@@ -34,7 +34,7 @@ calc.trans.rates <- function(lag,
   }
 
   trans_prob_vector <- c(rep(0, lag), rep(1, max_duration-lag))
-  eff_trans_distr <- trans_prob_vector * dgeom(0:(max_duration-1), recovery_rate)
+  eff_trans_distr <- trans_prob_vector * dgeom(0:(max_duration-1), recovery_rate) # probability that infection resolves when it is idx days old
   if (!is.null(raw_trans_rate)) {
     eff_trans_rate <- raw_trans_rate * MESS::auc(1:max_duration,
                                                  eff_trans_distr,
@@ -109,4 +109,62 @@ calc.RM.params <- function(N_h,
                 H_eq=H_eq,
                 V_eq=V_eq))
   }
+}
+
+#' @title Calculate the basic reproductive number (R0)
+#' @description Calculates the basic reproductive number (R0) for a given Ross-Macdonald simulation for either hosts or vectors.
+#' @usage calc.R0(RM_out, population, epoch)
+#' @details
+#' This function determines and returns the average number of hosts that an infected host goes on to infect OR the average number of vectors that an infected vector goes on to infect. If specified, the function will only calculate this value for infections that started within a particular time range (epoch).
+#' @param RM_out object containing the results of a Ross-Macdonald simulation (output of `run.RM()`)
+#' @param population either "H" or "V" for the host or vector population, respectively
+#' @param epoch a vector of length 2 specifying the time range that should be considered - defaults to the entire simulated time period
+#' @returns The R0 value (numeric type)
+#' @examples
+#' ## calculate R0 value for hosts in the example dataset
+#'  calc.R0(RM_out = RMsim::RM_out_basic_sim, population="H")
+#'
+#'  # returns:
+#'
+#'  [1] 0.9935829
+
+#'  calc.R0(RM_out = RMsim::RM_out_basic_sim, population="H", epoch=c(1, 300))
+#'
+#'  # returns:
+#'
+#'  [1] 1.377483
+#' @export
+calc.R0 <- function(RM_out,
+                    population = NULL,
+                    epoch = NULL) {
+  `%ni%` <- Negate(`%in%`)
+  if (is.null(population)) {
+    stop("\'population\' must be either \'H\' (host) or \'V\' (vector)")
+  } else {
+    if (population %ni% c("H", "V")) {
+      stop("\'population\' must be either \'H\' (host) or \'V\' (vector)")
+    }
+  }
+  if (is.null(epoch)) {
+    epoch <- range(RM_out$input_parameters["t_start",], RM_out$input_parameters["t_end",])
+  } else {
+    if (length(epoch) != 2 | !is.numeric(epoch)) {
+      stop("\'epoch\' must be a numeric vector of length 2, specifying the start and end time step.")
+    }
+  }
+  infection_record <- RM_out$infection_record
+  infected <- infection_record[intersect(which(infection_record$start_t > min(epoch) & infection_record$start_t < max(epoch)), grep(population, infection_record$infected)), "inf_id"]
+  R0 <- mean(sapply(infected, n.infs, infection_record = infection_record))
+  return(R0)
+}
+
+# calculates how many 2nd degree infections result from a particular infection
+n.infs <- function(infection_record, inf) {
+  first.degree <- infection_record[infection_record$origin_inf==inf, "inf_id"]
+  if (length(first.degree) > 0) {
+    n <-  length(infection_record[infection_record$origin_inf %in% first.degree, "inf_id"])
+  } else {
+    n <- 0
+  }
+  return(n)
 }

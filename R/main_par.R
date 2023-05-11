@@ -1,25 +1,25 @@
 #' @export
 run.RM.par <- function(N_h,
-                       N_h_t0=NULL,
+                       N_h_t0 = NULL,
                        N_v,
-                       N_v_t0=NULL,
+                       N_v_t0 = NULL,
                        runtime,
                        bite_rate,
-                       raw_hv_trans_rate=NULL,
-                       raw_vh_trans_rate=NULL,
-                       eff_hv_trans_rate=NULL,
-                       eff_vh_trans_rate=NULL,
+                       raw_hv_trans_rate = NULL,
+                       raw_vh_trans_rate = NULL,
+                       eff_hv_trans_rate = NULL,
+                       eff_vh_trans_rate = NULL,
                        h_rec_rate,
                        v_rec_rate,
                        h_lag,
                        v_lag,
                        h_max_duration,
                        v_max_duration,
-                       mean_hyp=0,
-                       hyp_act_rate=NULL,
-                       hyp_death_rate=NULL,
-                       prev_sim_output=NULL,
-                       verbose=T) {
+                       mean_hyp = 0,
+                       hyp_act_rate = NULL,
+                       hyp_death_rate = NULL,
+                       prev_sim_output = NULL,
+                       verbose = T) {
   `%nin%` <- Negate(`%in%`)
 
   # Check number of seed individuals
@@ -209,17 +209,17 @@ run.RM.par <- function(N_h,
     time.steps <- (ncol(indiv_status)+1):(ncol(indiv_status)+runtime)
   }
 
-  for (t in time.steps) {
-    if (t == 1) {
+  for (x in time.steps) {
+    if (x == 1) {
       # -- Step 0 - Initialize w/ infected hosts/vectors
       indiv_status[,"T1"] <- 0
       # Choose infected individuals
       new_inf_indivs <- c(sample(hIDs, size=N_h_t0), sample(vIDs, size=N_v_t0))
-      indiv_status[new_inf_indivs, paste0("T", t)] <- 1 # infect these
+      indiv_status[new_inf_indivs, paste0("T", x)] <- 1 # infect these
       for (type in c("H", "V")) {
         if (length(grep(type, new_inf_indivs)) > 0) {
           entry_rows <- (nrow(inf_record)+1):(nrow(inf_record)+length(grep(type, new_inf_indivs)))
-          inf_record[entry_rows,] <- cbind(entry_rows, paste0(c("H","V")[-match(type, c("H","V"))], "-seed"), paste0(c("H","V")[-match(type, c("H","V"))], "-seed"), new_inf_indivs[grep(type, new_inf_indivs)], t, NA)
+          inf_record[entry_rows,] <- cbind(entry_rows, paste0(c("H","V")[-match(type, c("H","V"))], "-seed"), paste0(c("H","V")[-match(type, c("H","V"))], "-seed"), new_inf_indivs[grep(type, new_inf_indivs)], x, NA)
         }
       }
       # Create hypnozoite reservoir for newly infected hosts
@@ -235,12 +235,12 @@ run.RM.par <- function(N_h,
       # -- Step 1 - All vectors bite hosts, transmitting and/or becoming infected
       # Simulate vector biting
       dat <- furrr::future_map(vIDs, .options=furrr::furrr_options(seed = T),
-                               ~sim.vector.biting(v=.x, hIDs=hIDs, t=t,
+                               ~sim.vector.biting(v=.x, hIDs=hIDs, x=x,
                                                   bite_rate=bite_rate,
                                                   vh_trans_rate=raw_vh_trans_rate,
                                                   hv_trans_rate=raw_hv_trans_rate,
                                                   h_lag=h_lag, v_lag=v_lag,
-                                                  prev_indiv_status=indiv_status[,paste0("T",(t-1))],
+                                                  prev_indiv_status=indiv_status[,paste0("T",(x-1))],
                                                   inf_record=inf_record))
       # Record infections
       new_infections <- as.data.frame(do.call(rbind, dat));rm(dat)
@@ -250,16 +250,16 @@ run.RM.par <- function(N_h,
         if (length(co_infected) > 0) {
           co_infected <- names(table(new_infections$infected))[co_infected]
           if (length(co_infected)>1) {msg_plural="s";msg_were="were"} else {msg_plural="";msg_were="was"}
-          if (verbose == T){message(paste0(length(co_infected), " co-infection", msg_plural, " in time step ", t, " ", msg_were, " simplified"))}
+          if (verbose == T){message(paste0(length(co_infected), " super-infection", msg_plural, " in time step ", x, " ", msg_were, " suppressed"))}
           new_infections <- rbind(new_infections[-which(new_infections$infected %in% co_infected),], new_infections[match(co_infected, new_infections$infected),])
         }
         rownames(new_infections) <- (nrow(inf_record)+1):(nrow(inf_record)+nrow(new_infections))
         inf_record[(nrow(inf_record)+1):(nrow(inf_record)+nrow(new_infections)),] <- cbind((nrow(inf_record)+1):(nrow(inf_record)+nrow(new_infections)), new_infections)
       }
       # Update individual statuses
-      indiv_status[,paste0("T",t)] <- indiv_status[,paste0("T",t-1)]
+      indiv_status[,paste0("T",x)] <- indiv_status[,paste0("T",x-1)]
       if (length(new_infections) > 0) {
-        indiv_status[new_infections$infected, paste0("T", t)] <- 1
+        indiv_status[new_infections$infected, paste0("T", x)] <- 1
       }
       rm(new_infections)
       # -- Step 2 - Dormant hypnozoites die/activate
@@ -267,10 +267,10 @@ run.RM.par <- function(N_h,
         # Simulate hypnozoite death
         hyp_reservoir[hIDs] <- lapply(X=hIDs, sim.hypno.death, hyp_reservoir=hyp_reservoir, hyp_death_rate=hyp_death_rate)
         # Identify hosts with hypnozoites but no active infection
-        dormant_hosts <- rownames(indiv_status[which(indiv_status[hIDs, paste0("T", t)]==0 & lapply(hyp_reservoir, FUN=length)>0),])
+        dormant_hosts <- rownames(indiv_status[which(indiv_status[hIDs, paste0("T", x)]==0 & lapply(hyp_reservoir, FUN=length)>0),])
         if (length(dormant_hosts) > 0) {
           # Simulate hypnozoite reactivation
-          dat <- lapply(X=dormant_hosts, t=t,
+          dat <- lapply(X=dormant_hosts, x=x,
                         FUN=sim.hypno.activation,
                         hyp_reservoir=hyp_reservoir,
                         hyp_act_rate=hyp_act_rate)
@@ -282,7 +282,7 @@ run.RM.par <- function(N_h,
           }
           # Update individual statuses
           if (length(new_infections) > 0) {
-            indiv_status[new_infections$infected, paste0("T", t)] <- 1
+            indiv_status[new_infections$infected, paste0("T", x)] <- 1
           }
           rm(new_infections)
           # Update hypnozoite reservoir
@@ -290,7 +290,7 @@ run.RM.par <- function(N_h,
         }
         # Create hypnozoite reservoir for hosts newly infected by a vector in Step 1 (not re-activations)
         if (mean_hyp > 0) {
-          new_inf_hosts <- hIDs[indiv_status[hIDs, paste0("T", t)] == 1 & indiv_status[hIDs, paste0("T", t-1)] == 0]
+          new_inf_hosts <- hIDs[indiv_status[hIDs, paste0("T", x)] == 1 & indiv_status[hIDs, paste0("T", x-1)] == 0]
           new_inf_hosts <- inf_record[intersect(which(inf_record$infected %in% new_inf_hosts & is.na(inf_record$end_t)), grep("V", inf_record$infector)), "infected"]
           if (length(new_inf_hosts) > 0) {
             new_hyp_reservoir <- lapply(X=new_inf_hosts, populate.hypno.reservoir, mean_hyp=mean_hyp, inf_record=inf_record)
@@ -302,59 +302,59 @@ run.RM.par <- function(N_h,
           hyp_reservoir <- setNames(mapply(c, hyp_reservoir[hIDs], new_hyp_reservoir[hIDs]), hIDs)
         }
         # Record total number of hypnozoites per host
-        n_hypno[, paste0("T",t)] <- as.numeric(unlist(lapply(hyp_reservoir, length)))
+        n_hypno[, paste0("T",x)] <- as.numeric(unlist(lapply(hyp_reservoir, length)))
       }
 
       # -- Step 3 - Infected individuals clear infections
       for (type in c("h", "v")) {
         # Determine who is infected
         ids <- get(paste0(type, "IDs"))
-        inf_indivs <- ids[which(indiv_status[ids,t-1]==1)]
+        inf_indivs <- ids[which(indiv_status[ids,x-1]==1)]
         if (length(inf_indivs) > 0) {
           # Clear infections with 'recovery rate' probability
-          indiv_status[inf_indivs, paste0("T", t)] <- indiv_status[inf_indivs,t-1] - rbinom(n=length(inf_indivs), size=1, prob=get(paste0(type,"_rec_rate")))
+          indiv_status[inf_indivs, paste0("T", x)] <- indiv_status[inf_indivs,x-1] - rbinom(n=length(inf_indivs), size=1, prob=get(paste0(type,"_rec_rate")))
           # Clear infections from individuals that have exceeded their maximum duration
           active_infs <- inf_record[inf_record$infected %in% inf_indivs & is.na(inf_record$end_t),]
-          too_long <- active_infs[t - as.numeric(active_infs$start_t) == get(paste0(type,"_max_duration"))-1, "infected"]
+          too_long <- active_infs[x - as.numeric(active_infs$start_t) == get(paste0(type,"_max_duration")), "infected"]
           if (length(too_long) > 0) {
             type.full <- c("host", "vector")[match(type, c("h", "v"))]
             if (length(too_long)>1) {msg_plural="s";msg_were="were"} else {msg_plural="";msg_were="was"}
-            if (verbose == T){message(paste0(length(too_long), " ", type.full, " infection", msg_plural, " ", msg_were, " forcibly terminated in time step ", t))}
-            indiv_status[too_long, paste0("T", t)] <- 0
+            if (verbose == T){message(paste0(length(too_long), " ", type.full, " infection", msg_plural, " ", msg_were, " forcibly terminated in time step ", x))}
+            indiv_status[too_long, paste0("T", x)] <- 0
           }
           # Clear infections from individuals that have recently emigrated
-          if (!is.null(prev_sim_output) & t == time.steps[1]) {
+          if (!is.null(prev_sim_output) & x == time.steps[1]) {
             if (input_params["N_h", previous.phase] > input_params["N_h", current.phase]) {
               emigrants <- old_hIDs[old_hIDs %nin% hIDs]
-              indiv_status[emigrants, paste0("T", t)] <- 0
-              inf_record[inf_record$infected %in% emigrants & is.na(inf_record$end_t), "end_t"] <- t
+              indiv_status[emigrants, paste0("T", x)] <- 0
+              inf_record[inf_record$infected %in% emigrants & is.na(inf_record$end_t), "end_t"] <- x
               hyp_reservoir[[emigrants]] <- NULL
-              n_hypno[emigrants, paste0("T", t)] <- 0
+              n_hypno[emigrants, paste0("T", x)] <- 0
             }
             if (input_params["N_v", previous.phase] > input_params["N_v", current.phase]) {
               emigrants <- old_vIDs[old_vIDs %nin% vIDs]
-              indiv_status[emigrants, paste0("T", t)] <- 0
-              inf_record[inf_record$infected %in% emigrants & is.na(inf_record$end_t), "end_t"] <- t
+              indiv_status[emigrants, paste0("T", x)] <- 0
+              inf_record[inf_record$infected %in% emigrants & is.na(inf_record$end_t), "end_t"] <- x
             }
           }
           # Update infection record
-          cleared <- inf_indivs[indiv_status[inf_indivs,t]==0]
-          inf_record[inf_record$infected %in% cleared & is.na(inf_record$end_t),"end_t"] <- t
+          cleared <- inf_indivs[indiv_status[inf_indivs,x]==0]
+          inf_record[inf_record$infected %in% cleared & is.na(inf_record$end_t),"end_t"] <- x
         }
       }
       # If no active infections remain, end simulation
-      if (sum(indiv_status[,t])==0) {
+      if (sum(indiv_status[,x])==0) {
         if (mean_hyp==0) {
-          message(paste("Simulation ended on day", t, "- no active infections remaining."))
+          message(paste("Simulation ended on day", x, "- no active infections remaining."))
           break
-        } else if (mean_hyp>0 & sum(n_hypno[,t])==0) {
-          message(paste("Simulation ended on day", t, "- no active or dormant infections remaining."))
+        } else if (mean_hyp>0 & sum(n_hypno[,x])==0) {
+          message(paste("Simulation ended on day", x, "- no active or dormant infections remaining."))
         }
       }
     }
 
     # Fix, store, and return output at the end of the simulation
-    if (t == max(time.steps)) {
+    if (x == max(time.steps)) {
       inf_record$start_t <- as.numeric(inf_record$start_t)
       inf_record$end_t <- as.numeric(inf_record$end_t)
       output <- list(input_parameters=input_params, RM_parameters=RM_params, indiv_status=indiv_status, infection_record=inf_record)
