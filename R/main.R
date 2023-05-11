@@ -23,15 +23,10 @@ run.RM <- function(N_h,
   `%nin%` <- Negate(`%in%`)
 
   # Input checks ----
-  if (is.na(N_h_t0)){N_h_t0 <- NULL}
-  if (is.na(N_v_t0)){N_v_t0 <- NULL}
-  if (is.na(raw_hv_trans_rate)){raw_hv_trans_rate <- NULL}
-  if (is.na(raw_vh_trans_rate)){raw_vh_trans_rate <- NULL}
-  if (is.na(eff_hv_trans_rate)){eff_hv_trans_rate <- NULL}
-  if (is.na(eff_vh_trans_rate)){eff_vh_trans_rate <- NULL}
-  if (is.na(hyp_act_rate)){hyp_act_rate <- NULL}
-  if (is.na(hyp_death_rate)){hyp_death_rate <- NULL}
-  if (is.na(prev_sim_output)){prev_sim_output <- NULL}
+  # Convert any NAs to NULLs
+  for (arg in c("N_h_t0", "N_v_t0", "raw_hv_trans_rate", "raw_vh_trans_rate", "eff_hv_trans_rate", "eff_vh_trans_rate", "hyp_act_rate", "hyp_death_rate", "prev_sim_output")) {
+    if (!is.null(get(arg))){if(is.na(get(arg))){assign(arg, NULL)}}
+  }
 
   # Check number of seed individuals
   if (is.null(prev_sim_output)) {
