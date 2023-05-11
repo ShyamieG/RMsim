@@ -44,6 +44,11 @@ sample.RM <- function(RM_out,
 
   input_parameters <- RM_out$input_parameters
   infection_record <- RM_out$infection_record
+
+  if (input_parameters["t_end", ncol(input_parameters)] < time_step) {
+    stop("Sample time ('time_step') must fall within the time course of the simulation.")
+  }
+
   phase <- which(input_parameters["t_start", ] <= time_step & input_parameters["t_end", ] >= time_step)
 
   # Re-name population elements if necessary
@@ -59,8 +64,8 @@ sample.RM <- function(RM_out,
     }
   } else {
     dat <- infection_record[infection_record$start_t < time_step & (infection_record$end_t >= time_step | is.na(infection_record$end_t)),]
-    if (population != "both") {
-      dat <- dat[grep(population, dat$infected),]
+    if (length(population) == 1) {
+      dat <- dat[grep(toupper(population), dat$infected),]
     }
   }
 
