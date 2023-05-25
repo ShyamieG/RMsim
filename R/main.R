@@ -25,15 +25,15 @@ run.RM <- function(N_h,
   # Input checks ----
   # Convert any NAs to NULLs
   for (arg in c("N_h_t0", "N_v_t0", "raw_hv_trans_rate", "raw_vh_trans_rate", "eff_hv_trans_rate", "eff_vh_trans_rate", "hyp_act_rate", "hyp_death_rate", "prev_sim_output")) {
-    if (!is.null(get(arg))){if(is.na(get(arg))){assign(arg, NULL)}}
-  }
+    if (!is.null(get(arg))){if(length(get(arg))==1){if(is.na(get(arg))){assign(arg, NULL)}}}
+  };rm(arg)
 
   # Check number of seed individuals
   if (is.null(prev_sim_output)) {
-    if (is.null(N_h_t0) | is.null(N_v_t0)) {
+    if (is.null(N_h_t0) || is.null(N_v_t0)) {
       stop("Starting number of seed individuals must be specified.")
     }
-    if (N_h < N_h_t0 | N_v < N_v_t0) {
+    if (N_h < N_h_t0 || N_v < N_v_t0) {
       stop("Number of seed individuals exceeds total number of individuals.")
     }
   }
@@ -125,19 +125,37 @@ run.RM <- function(N_h,
                                    v_rec_rate=v_rec_rate)
   for (param in names(RM_parameters_temp)) {
     assign(param, RM_parameters_temp[[param]])
-  };rm(RM_parameters_temp)
+  };rm(param, RM_parameters_temp)
 
   # Create vectors of host and vector names
   hIDs <- paste0(rep("H", N_h), 1:N_h)
   vIDs <- paste0(rep("V", N_v), 1:N_v)
 
+  # Determine how many rows to add to infection record at a time
+  n_infs_per_time_step <- ceiling(bite_rate * V_eq * N_v * (1-H_eq) * eff_vh_trans_rate + # infected vectors transmit to susceptible hosts
+                                  bite_rate * (1 - V_eq) * N_v * H_eq * eff_hv_trans_rate) # infected hosts transmit to susceptible vectors
+  if (mean_hyp > 0) {
+    n_infs_per_time_step <- ceiling(n_infs_per_time_step + (1-H_eq) * H_eq * hyp_act_rate)
+  }
+  n_add_rows <- max(c(1e4, max(rpois(1e6, n_infs_per_time_step))));rm(n_infs_per_time_step)
+
   # Create data frame to store infection record
   if (is.null(prev_sim_output)) {
-    infection_record <- as.data.frame(matrix(ncol=6, nrow=0))
+    infection_record <- data.table::as.data.table(matrix(ncol=6, nrow=n_add_rows))
     colnames(infection_record) <- c("inf_id","origin_inf","infector", "infected","start_t","end_t")
+    col_types <- c("integer", "integer", "character", "character", "integer", "integer");names(col_types) <- colnames(infection_record)
+    for (col in names(col_types)) {
+      data.table::set(infection_record, j=col, value=as(infection_record[[col]], col_types[col]))
+    };rm(col, col_types)
+    data.table::setkey(infection_record, inf_id)
+    current_row <- 1
   } else {
     infection_record <- prev_sim_output$infection_record
+    current_row <- nrow(infection_record) + 1
+    empty_rows <- data.table::data.table(matrix(NA, nrow = n_add_rows, ncol = ncol(infection_record)));colnames(empty_rows) <- colnames(infection_record)
+    infection_record <- data.table::rbindlist(list(infection_record, empty_rows), fill = TRUE)
   }
+  total_rows <- nrow(infection_record)
 
   # Create a vector to store individual infection age
   if (is.null(prev_sim_output)) {
@@ -159,30 +177,27 @@ run.RM <- function(N_h,
 
   # If specified, create objects to store information about hypnozoite reservoirs
   if (mean_hyp > 0) {
-    if (is.null(prev_sim_output) | prev_sim_output$input_parameters["mean_hyp", ncol(prev_sim_output$input_parameters)] == 0) {
+    if (is.null(prev_sim_output)) {
+      hyp_reservoir <- list();length(hyp_reservoir) <- N_h;names(hyp_reservoir) <- hIDs
+      n_hypno <- rep(0, N_h)
+      names(n_hypno) <- hIDs
+    } else if (prev_sim_output$input_parameters["mean_hyp", ncol(prev_sim_output$input_parameters)] == 0) {
       hyp_reservoir <- list();length(hyp_reservoir) <- N_h;names(hyp_reservoir) <- hIDs
       n_hypno <- rep(0, N_h)
       names(n_hypno) <- hIDs
     } else {
-      if (prev_sim_output$input_parameters["N_h", ncol(prev_sim_output$input_parameters)] >= N_h) {
-        hyp_reservoir <- prev_sim_output$hyp_reservoir;hyp_reservoir <- hyp_reservoir[hIDs]
-        n_hypno <- prev_sim_output$n_hypno;n_hypno < n_hypno[hIDs]
+      if (prev_sim_output$input_parameters["N_h", ncol(prev_sim_output$input_parameters)] == N_h) {
+        hyp_reservoir <- prev_sim_output$hyp_reservoir
+        n_hypno <- prev_sim_output$n_hypno
       } else {
         old_hIDs <- names(prev_sim_output$inf_age)[grep("H", names(prev_sim_output$inf_age))]
+        max_N_h = max(c(N_h, as.double(prev_sim_output$input_parameters["N_h",])))
         hyp_reservoir <- list();length(hyp_reservoir) <- N_h;names(hyp_reservoir) <- hIDs
-        hyp_reservoir[old_hIDs] <- prev_sim_output$hyp_reservoir
-        n_hypno <- rep(0, N_h)
-        names(n_hypno) <- hIDs
-        n_hypno[old_hIDs] <- prev_sim_output$n_hypno
+        hyp_reservoir[[old_hIDs]] <- prev_sim_output$hyp_reservoir
+        n_hypno <- rep(0, max_N_h)
+        names(n_hypno) <- paste0(rep("H", max_N_h), 1:max_N_h)
+        n_hypno[old_hIDs, 1:ncol(n_hypno)] <- prev_sim_output$n_hypno
       }
-    }
-  }
-
-  # Store existing hypnozoite reservoir
-  if (!is.null(prev_sim_output)) {
-    if (prev_sim_output$input_parameters["mean_hyp", ncol(prev_sim_output$input_parameters)] > 0) {
-      hyp_reservoir <- prev_sim_output$hyp_reservoir
-      n_hypno <- prev_sim_output$n_hypno
     }
   }
 
@@ -249,44 +264,56 @@ run.RM <- function(N_h,
           RM_parameters[i, current_phase] <- val
         }
       }
-    }
+    };rm(i)
   }
 
   # Create a data frame to store proportion of population infected over time
   time.steps <- (input_parameters["t_end", current_phase]-runtime+1):input_parameters["t_end", current_phase]
   if (is.null(prev_sim_output)) {
-    proportion_infected <- as.data.frame(matrix(nrow=2, ncol=length(time.steps)))
+    proportion_infected <- as.data.frame(matrix(nrow=2, ncol=runtime))
     rownames(proportion_infected) <- c("H", "V")
-    proportion_infected[,1] <- 0
   } else {
-    proportion_infected <- prev_sim_output$proportion_infected;proportion_infected[,time.steps] <- NA
+    proportion_infected <- prev_sim_output$proportion_infected
   }
+  proportion_infected[,time.steps] <- NA
 
   ## Run simulation sequentially over each time step
   ## -----------------------------------------------
+  time.steps <- (input_parameters["t_end", current_phase]-runtime+1):input_parameters["t_end", current_phase]
   for (x in time.steps) {
     if (x == 1) {
       # -- Step 0 - Initialize w/ infected hosts/vectors ----
       # choose infected individuals
       new_inf_indivs <- c(sample(hIDs, size=N_h_t0), sample(vIDs, size=N_v_t0))
       inf_age[new_inf_indivs] <- 0 # initiate infection
+      proportion_infected[,x] <- 0
+      # add extra rows to infection record if running low
+      while ((total_rows - current_row) < length(new_inf_indivs)) {
+        empty_rows <- data.table::data.table(matrix(NA, nrow = n_add_rows, ncol = ncol(infection_record)));colnames(empty_rows) <- colnames(infection_record)
+        infection_record <- data.table::rbindlist(list(infection_record, empty_rows), fill = TRUE)
+        total_rows <- nrow(infection_record)
+      }
       # add these events to the infection record
       for (type in c("H", "V")) {
         if (length(grep(type, new_inf_indivs)) > 0) {
-          inf_ids <- (nrow(infection_record)+1):(nrow(infection_record)+length(grep(type, new_inf_indivs)))
-          infection_record[inf_ids,] <- cbind(inf_ids, paste0(c("H","V")[-match(type, c("H","V"))], "-seed"), paste0(c("H","V")[-match(type, c("H","V"))], "-seed"), new_inf_indivs[grep(type, new_inf_indivs)], x, NA)
+          inf_ids <- current_row:(current_row+length(grep(type, new_inf_indivs))-1)
+          current_row <- max(inf_ids) + 1
+          new_infections <- cbind.data.frame(inf_ids, 0, paste0(c("H","V")[-match(type, c("H","V"))], "-seed"), new_inf_indivs[grep(type, new_inf_indivs)], x, NA)
+          infection_record[inf_ids, names(infection_record) := new_infections]
         }
       };rm(type, inf_ids)
       # create hypnozoite reservoir for newly infected hosts
       if (mean_hyp > 0) {
         new_inf_hosts <- new_inf_indivs[new_inf_indivs %in% hIDs]
         if (length(new_inf_hosts) > 0) {
-          hyp_reservoir[new_inf_hosts] <- lapply(X=new_inf_hosts, populate.hypno.reservoir, hyp_reservoir=hyp_reservoir[new_inf_hosts], mean_hyp=mean_hyp, infection_record=infection_record[infection_record$infected %in% new_inf_hosts & is.na(infection_record$end_t),])
-          no_hyp <- names(which(lapply(hyp_reservoir[new_inf_hosts], length) == 0))
-          new_inf_hosts <- names(which(lapply(hyp_reservoir[new_inf_hosts], length) > 0))
-          hyp_reservoir[no_hyp] <- NULL;names(hyp_reservoir[no_hyp]) <- no_hyp;rm(no_hyp)
-          # record total number of hypnozoites per host
-          n_hypno[new_inf_hosts] <- as.numeric(unlist(lapply(hyp_reservoir[new_inf_hosts], length)))
+          n_hyps <- rgeom(length(new_inf_hosts), prob = 1/(mean_hyp+1))
+          # remove hosts that did not generate any hypnozoites
+          new_inf_hosts <- new_inf_hosts[n_hyps != 0];n_hyps <- n_hyps[n_hyps != 0]
+          origins_infs <- infection_record[!is.na(inf_id) & is.na(end_t)][match(infected, new_inf_hosts), "origin_inf"]
+          # populate reservoir
+          hyp_reservoir[new_inf_hosts] <- mapply(rep, origins_infs, n_hyps)
+          n_hypno[new_inf_hosts] <- n_hypno[new_inf_hosts] - n_hyps
+          rm(origins_infs, n_hyps)
         };rm(new_inf_hosts)
       };rm(new_inf_indivs)
     } else {
@@ -295,7 +322,7 @@ run.RM <- function(N_h,
       inf_age[!is.na(inf_age)] <- inf_age[!is.na(inf_age)] + 1
       # update proportion infected
       for (type in c("h", "v")) {
-        n_infected <- length(which(!is.na(inf_age[get(paste0(type, "IDs"))])))
+        n_infected <- sum(!is.na(inf_age[get(paste0(type, "IDs"))]))
         proportion_infected[toupper(type), x] <- n_infected/get(paste0("N_", type))
       };rm(type, n_infected)
       # create new_infections placeholder
@@ -325,7 +352,7 @@ run.RM <- function(N_h,
         # if there are successful transmission events...
         if (nrow(transmission_events) > 0) {
           infectors <- c(transmission_events[transmission_events$vh_trans_event==1,"V"], transmission_events[transmission_events$hv_trans_event==1,"H"])
-          active_infs <- infection_record[is.na(infection_record$end_t),]
+          active_infs <- infection_record[is.na(end_t) & !is.na(inf_id)]
           origin_infs <- active_infs$inf_id[match(infectors, active_infs$infected)]
           infecteds <- c(transmission_events[transmission_events$vh_trans_event==1,"H"], transmission_events[transmission_events$hv_trans_event==1,"V"])
           # simplify multiple infection events to single host/vector
@@ -341,9 +368,17 @@ run.RM <- function(N_h,
               message(paste0(n_infs_removed, " superinfection", msg_plural, " in time step ", x, " ", msg_were, " suppressed"))
             }
           };rm(n_infs, n_infs_simplified, n_infs_removed)
-          inf_ids <- (nrow(infection_record)+1):(nrow(infection_record)+length(origin_infs))
-          new_infections <- as.data.frame(cbind(inf_ids, origin_infs, infectors, infecteds, x, NA))
-          infection_record[inf_ids,] <- new_infections
+          # add extra rows to infection record if running low
+          while ((total_rows - current_row) < length(infecteds)) {
+            empty_rows <- data.table::data.table(matrix(NA, nrow = n_add_rows, ncol = ncol(infection_record)));colnames(empty_rows) <- colnames(infection_record)
+            infection_record <- data.table::rbindlist(list(infection_record, empty_rows), fill = TRUE)
+            total_rows <- nrow(infection_record)
+          }
+          # add these events to the infection record
+          inf_ids <- current_row:(current_row+length(infecteds)-1)
+          new_infections <- cbind.data.frame(inf_ids, origin_infs, infectors, infecteds, x, NA)
+          infection_record[inf_ids, names(infection_record) := new_infections]
+          current_row <- max(inf_ids) + 1
           # update individual statuses
           inf_age[infecteds] <- 0
           rm(inf_ids, active_infs, origin_infs, infectors, infecteds)
@@ -351,15 +386,15 @@ run.RM <- function(N_h,
       };rm(n_bites, biting_events)
       # -- Step 2 - Dormant hypnozoites die/activate ----
       if (mean_hyp > 0) {
-        # determine actions fate of each hypnozoite
-        hyp_events <- as.data.frame(matrix(nrow=sum(n_hypno), ncol=5))
-        colnames(hyp_events) <- c("H", "H_infected", "origin_inf", "dies", "activates")
-        # which hosts have hypnozoites? what is their infection status?
-        dormant_hosts <- names(n_hypno[n_hypno > 0])
-        if (length(dormant_hosts) > 0) {
+        if (sum(n_hypno) > 0) {
+          # determine actions fate of each hypnozoite
+          hyp_events <- as.data.frame(matrix(nrow=sum(n_hypno), ncol=5))
+          colnames(hyp_events) <- c("H", "H_infected", "origin_inf", "dies", "activates")
+          # which hosts have hypnozoites? what is their infection status?
+          dormant_hosts <- names(n_hypno[n_hypno > 0])
           hyp_events$H <- unlist(mapply(rep, dormant_hosts, n_hypno[n_hypno > 0]))
           hyp_events$H_infected <- unlist(mapply(rep, !is.na(inf_age[dormant_hosts]), n_hypno[n_hypno > 0]))
-          hyp_events$origin_inf <- as.numeric(unlist(hyp_reservoir[dormant_hosts]))
+          hyp_events$origin_inf <- as.integer(unlist(hyp_reservoir[dormant_hosts])) #####
           # simulate hypnozoite death
           hyp_events$dies <- rbinom(n=nrow(hyp_events), size=1, prob=hyp_death_rate)
           # simulate hypnozoite activation in hosts that do not have an active infection
@@ -391,41 +426,53 @@ run.RM <- function(N_h,
             rm(keep_idx)
           };rm(multi_activation)
           # activate hypnozoites
-          hosts_to_activate <-  hyp_events$H[hyp_events$activates==1]
-          if (length(hosts_to_activate) > 0) {
-            dat <- lapply(hosts_to_activate, FUN=sim.hypno.activation, hyp_reservoir=hyp_reservoir[hosts_to_activate])
-            new_infs <- as.data.frame(do.call(rbind, lapply(dat, function(l) l[[1]])))
-            new_rows <- (nrow(infection_record)+1):(nrow(infection_record)+nrow(new_infs))
-            infection_record[new_rows,] <- cbind(new_rows, new_infs)
-            hyp_reservoir[hosts_to_activate] <- lapply(dat, function(l) l[[2]])
-            n_hypno[hosts_to_activate] <- as.numeric(unlist(lapply(hyp_reservoir[hosts_to_activate], length)))
-            inf_age[hosts_to_activate] <- 0
-            rm(dat, new_infs, new_rows)
-          };rm(hosts_to_activate)
+          activation_events <-  hyp_events[hyp_events$activates==1, c("H", "origin_inf")]
+          if (nrow(activation_events) > 0) {
+            inf_ids <- current_row:(current_row+nrow(activation_events)-1)
+            new_infections <- cbind.data.frame(inf_ids, activation_events$origin_inf, activation_events$H, activation_events$H, x, NA)
+            # add extra rows to infection record if running low
+            while ((total_rows - current_row) < length(inf_ids)) {
+              empty_rows <- data.table::data.table(matrix(NA, nrow = n_add_rows, ncol = ncol(infection_record)));colnames(empty_rows) <- colnames(infection_record)
+              infection_record <- data.table::rbindlist(list(infection_record, empty_rows), fill = TRUE)
+              total_rows <- nrow(infection_record)
+            }
+            # add these events to the infection record
+            infection_record[inf_ids, names(infection_record) := new_infections]
+            current_row <- max(inf_ids) + 1
+            hyp_reservoir[activation_events$H] <- mapply(function(x, y) x[-match(y, x)], hyp_reservoir[activation_events$H], y=activation_events$origin_inf, SIMPLIFY = F) ###
+            n_hypno[activation_events$H] <- n_hypno[activation_events$H]-1
+            inf_age[activation_events$H] <- 0
+            rm(inf_ids)
+          };rm(activation_events)
           # kill hypnozoites
-          hosts_to_kill_hyp <- table(hyp_events$H[hyp_events$dies==1])
-          if (length(hosts_to_kill_hyp) > 0) {
-            hyp_reservoir[names(hosts_to_kill_hyp)] <- mapply(sim.hypno.death, names(hosts_to_kill_hyp), n_to_kill=hosts_to_kill_hyp, MoreArgs=list(hyp_reservoir=hyp_reservoir[names(hosts_to_kill_hyp)]), SIMPLIFY=F)
-            n_hypno[names(hosts_to_kill_hyp)] <- as.numeric(unlist(lapply(hyp_reservoir[names(hosts_to_kill_hyp)], length)))
-          };rm(hosts_to_kill_hyp, hyp_events)
+          hyp_death_events <- hyp_events[hyp_events$dies==1, c("H", "origin_inf")]
+          if (nrow(hyp_death_events) > 0) {
+            hyp_reservoir[unique(hyp_death_events$H)] <- lapply(unique(hyp_death_events$H), function(x) {hyps <- hyp_reservoir[[x]];to_remove <- hyp_death_events[hyp_death_events$H==x, "origin_inf"];while (length(to_remove) > 0) {hyps <- hyps[-match(unique(to_remove), hyps)];to_remove <- to_remove[-match(unique(to_remove), to_remove)]};return(hyps)})
+            n_hypno[names(table(hyp_death_events$H))] <- n_hypno[names(table(hyp_death_events$H))] - as.integer(table(hyp_death_events$H))
+          };rm(hyp_death_events, hyp_events)
+          # generate hypnozoite reservoir for hosts newly infected by a vector in Step 1 (not re-activations)
+          new_inf_hosts <- new_infections[grep("H", new_infections$infecteds), "infecteds"]
+          if (length(new_inf_hosts) > 0) {
+            n_hyps <- rgeom(length(new_inf_hosts), prob = 1/(mean_hyp+1))
+            # remove hosts that did not generate any hypnozoites
+            new_inf_hosts <- new_inf_hosts[n_hyps != 0];n_hyps <- n_hyps[n_hyps != 0]
+            origins_infs <- infection_record[!is.na(inf_id) & is.na(end_t)][match(infected, new_inf_hosts), "origin_inf"]
+            # populate reservoir
+            hyp_reservoir[new_inf_hosts] <- mapply(rep, origins_infs, n_hyps)
+            n_hypno[new_inf_hosts] <- n_hypno[new_inf_hosts] - n_hyps
+            rm(origins_infs, n_hyps)
+          };rm(new_inf_hosts)
         }
-        # generate hypnozoite reservoir for hosts newly infected by a vector in Step 1 (not re-activations)
-        new_inf_hosts <- new_infections[grep("H", new_infections$infecteds), "infecteds"]
-        if (length(new_inf_hosts) > 0) {
-          hyp_reservoir[new_inf_hosts] <- lapply(X=new_inf_hosts, populate.hypno.reservoir, hyp_reservoir=hyp_reservoir[new_inf_hosts], mean_hyp=mean_hyp, infection_record=infection_record[infection_record$infected %in% new_inf_hosts & is.na(infection_record$end_t),])
-          no_hyp <- names(which(lapply(hyp_reservoir[new_inf_hosts], length) == 0))
-          new_inf_hosts <- names(which(lapply(hyp_reservoir[new_inf_hosts], length) > 0))
-          hyp_reservoir[no_hyp] <- NULL;names(hyp_reservoir[no_hyp]) <- no_hyp;rm(no_hyp)
-          # record total number of hypnozoites per host
-          n_hypno[new_inf_hosts] <- as.numeric(unlist(lapply(hyp_reservoir[new_inf_hosts], length)))
-        };rm(new_inf_hosts)
       }
+      # set all empty or NA entries in the hypnozoite reservoir to NULL
+      no_hyp <- unique(c(names(which(lapply(hyp_reservoir, length) == 0)), names(which(is.na(unlist(hyp_reservoir))))))
+      hyp_reservoir[no_hyp] <- NULL;names(hyp_reservoir[no_hyp]) <- no_hyp;rm(no_hyp)
       # -- Step 3 - Infected individuals clear infections ----
       no_longer_infected <- c()
       for (type in c("h", "v")) {
       	# Determine who is infected
         ids <- get(paste0(type, "IDs"))
-        currently_infected <- names(inf_age[ids][which(inf_age[ids]>0)]) # infections can only be cleared once they are at least 1 day old
+        currently_infected <- names(na.omit(inf_age[inf_age>0 & names(inf_age) %in% ids])) # infections can only be cleared once they are at least 1 day old
         if (length(currently_infected) > 0) {
           # Individuals recover with a 'recovery rate' probability
           no_longer_infected <- c(no_longer_infected, currently_infected[which(rbinom(n=length(currently_infected), size=1, prob=get(paste0(type,"_rec_rate")))==1)])
@@ -436,18 +483,30 @@ run.RM <- function(N_h,
             if (verbose == T){
               if (length(too_long)>1) {msg_plural="s";msg_were="were"} else {msg_plural="";msg_were="was"}
               message(paste0(length(too_long), " ", type.full, " infection", msg_plural, " ", msg_were, " forcibly terminated in time step ", x))
-            }
+            };rm(type.full)
             no_longer_infected <- c(no_longer_infected, too_long)
+          }
+          # Identify individuals that have recently emigrated
+          if (!is.null(prev_sim_output) & x == time.steps[1]) {
+            old_ids <- get(paste0("old_", type, "IDs"))
+            if (length(old_ids) > length(ids)) {
+              emigrants <- old_ids[old_ids %nin% ids]
+              no_longer_infected <- c(no_longer_infected, emigrants)
+              if (type == "h") {
+                hyp_reservoir[[emigrants]] <- NULL
+                n_hypno[emigrants] <- 0
+              };rm(emigrants)
+            };rm(old_ids)
           }
         }
       };rm(type, ids, currently_infected)
       if (length(no_longer_infected) > 0) {
         inf_age[no_longer_infected] <- NA
-        infection_record[infection_record$infected %in% no_longer_infected & is.na(infection_record$end_t), "end_t"] <- x
+        infection_record[infected %in% no_longer_infected & is.na(end_t), end_t := x]
       };rm(no_longer_infected)
 
       # If no active infections remain, end simulation
-      if (length(which(is.na(inf_age))) == N_h + N_v) {
+      if (sum(is.na(inf_age)) == N_h + N_v) {
         if (mean_hyp == 0) {
           message(paste("Simulation ended on day", x, "- no active infections remaining."))
           break
@@ -460,18 +519,11 @@ run.RM <- function(N_h,
 
     # Fix, store, and return output at the end of the simulation
     if (x == max(time.steps)) {
-      infection_record$start_t <- as.numeric(infection_record$start_t)
-      infection_record$end_t <- as.numeric(infection_record$end_t)
-      if (is.null(prev_sim_output)) {
-        output <- list(input_parameters=input_parameters, RM_parameters=RM_parameters, infection_record=infection_record, inf_age=inf_age, proportion_infected=proportion_infected)
-        if (mean_hyp > 0) {
-          output <- append(output, list(hyp_reservoir=hyp_reservoir, n_hypno=n_hypno))
-        }
-      } else {
-        output <- prev_sim_output
-        for (i in names(prev_sim_output)) {
-          output[[i]] <- get(i)
-        }
+      # process infection record
+      infection_record <- infection_record[!is.na(inf_id)]
+      output <- list(input_parameters=input_parameters, RM_parameters=RM_parameters, infection_record=infection_record, inf_age=inf_age, proportion_infected=proportion_infected)
+      if (mean_hyp > 0) {
+        output <- append(output, list(hyp_reservoir=hyp_reservoir, n_hypno=n_hypno))
       }
       return(output)
     }

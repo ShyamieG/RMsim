@@ -52,7 +52,7 @@ sample.RM <- function(RM_out,
   phase <- which(input_parameters["t_start", ] <= time_step & input_parameters["t_end", ] >= time_step)
 
   # Re-name population elements if necessary
-  if (population == "both"){population <- c("h", "v")}
+  if (any(population == "both")){population <- c("h", "v")}
   if (any(population %in% c("host", "vector"))) {population[population=="host"] <- "h";population[population=="vector"] <- "v"}
 
   if (sample_post_lag) {
@@ -60,19 +60,19 @@ sample.RM <- function(RM_out,
     for (p in population) {
       lag <- input_parameters[paste0(p, "_lag"), phase]
       ids <- paste0(toupper(p), 1:input_parameters[paste0("N_", p), phase])
-      dat <- rbind(dat, infection_record[infection_record$infected %in% ids & infection_record$start_t + lag < time_step & (infection_record$end_t >= time_step | is.na(infection_record$end_t)),])
+      dat <- rbind(dat, infection_record[infected %in% ids & start_t + lag < time_step & (end_t >= time_step | is.na(end_t))])
     }
   } else {
-    dat <- infection_record[infection_record$start_t < time_step & (infection_record$end_t >= time_step | is.na(infection_record$end_t)),]
+    dat <- infection_record[start_t < time_step & (end_t >= time_step | is.na(end_t))]
     if (length(population) == 1) {
-      dat <- dat[grep(toupper(population), dat$infected),]
+      dat <- dat[grep(toupper(population), infected),]
     }
   }
 
   if (resample_possible == FALSE) {
-    already.sampled <- infection_record[infection_record$infected=="sample", "origin_inf"]
+    already.sampled <- infection_record[infected=="sample", "origin_inf"]
     if (length(already.sampled) > 0) {
-      dat <- dat[-which(dat$inf_id %in% already.sampled),]
+      dat <- dat[!(dat$inf_id %in% already.sampled),]
     }
   }
   if (!is.null(proportion)) {
@@ -93,15 +93,15 @@ sample.RM <- function(RM_out,
     return(RM_out)
   } else {
     if (resample_possible) {
-      infs_to_sample <- dat[sample(dat$inf_id, size=sample.size, replace=T),]
+      infs_to_sample <- dat[inf_id %in% sample(dat$inf_id, size=sample.size, replace=T)]
     } else {
-      infs_to_sample <- dat[sample(dat$inf_id, size=sample.size, replace=F),]
+      infs_to_sample <- dat[inf_id %in% sample(dat$inf_id, size=sample.size, replace=F)]
     }
-    sample_infection_record <- as.data.frame(cbind((nrow(infection_record)+1):(nrow(infection_record)+nrow(infs_to_sample)), infs_to_sample$inf_id, infs_to_sample$infected, rep("sample", nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample)), rep(time_step, nrow(infs_to_sample))))
-    infection_record[(nrow(infection_record)+1):(nrow(infection_record)+nrow(infs_to_sample)),] <- sample_infection_record
-    infection_record$start_t <- as.numeric(infection_record$start_t);infection_record$end_t <- as.numeric(infection_record$end_t)
+    inf_ids <- (nrow(infection_record)+1):(nrow(infection_record)+nrow(infs_to_sample))
+    sample_infection_record <- cbind.data.frame(inf_ids, infs_to_sample$inf_id, infs_to_sample$infected, "sample", time_step, time_step);colnames(sample_infection_record) <- colnames(infection_record)
+    infection_record <- data.table::rbindlist(list(infection_record, sample_infection_record))
     if (sort_events) {
-      infection_record <- infection_record[order(infection_record$start_t),]
+      infection_record <- infection_record[order(start_t)]
     }
     RM_out$infection_record <- infection_record
     return(RM_out)
@@ -113,12 +113,12 @@ sample.RM <- function(RM_out,
 prune.infection.record <- function(infection_record) {
   `%ni%` <- Negate(`%in%`)
   # Determine sample infections
-  sample_infections <- infection_record[infection_record$infected=="sample", "inf_id"]
+  sample_infections <- infection_record[infected=="sample"]$inf_id
   if (length(sample_infections) == 0) {
     stop("There are no samples in this infection record. Did you run sample.RM() first?")
   }
   # Determine seed infections
-  seed_infs <- infection_record[grep("seed", infection_record$infector), "inf_id"]
+  seed_infs <- infection_record[grep("seed", infector)]$inf_id
   keep_infs <- c()
   # Loop over each sample infection and trace back until a seed infection is reached
   for (i in sample_infections) {
@@ -126,8 +126,7 @@ prune.infection.record <- function(infection_record) {
     j <- i
     while (j %ni% c(seed_infs, keep_infs)) {
       # update j
-      j <- infection_record[infection_record$inf_id==j, "origin_inf"]
-      if (j == "125644") {print(i)}
+      j <- infection_record[inf_id==j, "origin_inf"][[1]]
       # keep this infection in pruned record
       j_inf_history[length(j_inf_history)+1] <- j
     }
@@ -136,29 +135,31 @@ prune.infection.record <- function(infection_record) {
   # Keep all focal transmissions
   keep_infs[(length(keep_infs)+1):(length(keep_infs)+length(sample_infections))] <- sample_infections
   # Remove duplicates
-  pruned_infection_record <- infection_record[infection_record$inf_id %in% unique(keep_infs),]
+  pruned_infection_record <- infection_record[inf_id %in% unique(keep_infs)]
   return(pruned_infection_record)
 }
 
 #' @export
 # convert pruned output to format needed by SLiM-based pipeline
 generate.SLiM.input <- function(pruned_infection_record, sim_params) {
-  output <- as.data.frame(t(sapply(X=unique(pruned_infection_record$origin_inf),
-                                   FUN=populate.SLiM.table,
-                                   pruned_infection_record=pruned_infection_record)))
+  output <- data.table::data.table(t(sapply(X=unique(pruned_infection_record$origin_inf),
+                                            FUN=populate.SLiM.table,
+                                            pruned_infection_record=pruned_infection_record)))
   colnames(output) <- c("infection_idx", "infection_source", "infector_type", "infector_id", "infected_ids", "RM_time_start", "inf_time_start")
-  rownames(output) <- 1:nrow(output)
   # fill in infection start times
   for (infector_type in c("h", "v")) {
     seed_infs <- intersect(grep("NA", output$inf_time_start), which(output$infector_type==toupper(infector_type)))
-    infected_type <- c("v", "h")[-match(infector_type, c("v", "h"))]
-    trans_prob_distr <- (1-sim_params[paste0(infector_type, "_rec_rate"), 1])^(1:(sim_params[paste0(infector_type, "_max_duration"), 1])) * sim_params["bite_rate", 1] * sim_params[paste0("raw_", infector_type, infected_type, "_trans_rate"), 1]
-    trans_prob_distr[1:(sim_params[paste0(infector_type, "_lag"), 1]-1)] <- 0
-    trans_prob_distr <- as.data.frame(cbind(1:sim_params[paste0(infector_type, "_max_duration"), 1], trans_prob_distr));colnames(trans_prob_distr) <- c("x", "prob")
-    trans_prob_distr <- pdqr::new_r(trans_prob_distr, type="discrete")
-    for (i in seed_infs) {
-      start_times <- unlist(strsplit(output[i, "inf_time_start"], split=";"))
-      output[i, "inf_time_start"] <- paste(trans_prob_distr(length(start_times)), collapse=";")
+    if (length(seed_infs) > 0) {
+      infected_type <- c("v", "h")[-match(infector_type, c("v", "h"))]
+      trans_prob_distr <- (1-sim_params[paste0(infector_type, "_rec_rate"), 1])^(1:(sim_params[paste0(infector_type, "_max_duration"), 1])) * sim_params["bite_rate", 1] * sim_params[paste0("raw_", infector_type, infected_type, "_trans_rate"), 1]
+      trans_prob_distr[1:(sim_params[paste0(infector_type, "_lag"), 1]-1)] <- 0
+      trans_prob_distr <- as.data.frame(cbind(1:sim_params[paste0(infector_type, "_max_duration"), 1], trans_prob_distr));colnames(trans_prob_distr) <- c("x", "prob")
+      trans_prob_distr <- pdqr::new_r(trans_prob_distr, type="discrete")
+      for (i in seed_infs) {
+        start_times <- unlist(strsplit(unlist(output[i, "inf_time_start"])[[1]], split=";"))
+        output[i, inf_time_start := paste(trans_prob_distr(length(start_times)), collapse=";")]
+        output[i, infection_idx := paste0(infector_type, '-seed')]
+      }
     }
   }
   return(output)
@@ -166,8 +167,9 @@ generate.SLiM.input <- function(pruned_infection_record, sim_params) {
 
 # sub-function of generate.SLiM.input()
 populate.SLiM.table <- function(pruned_infection_record, inf_id) {
+  inf_id0 <- inf_id # to distinguish from column name
   # Filter to infections that resulted from inf_id
-  dat <- pruned_infection_record[which(pruned_infection_record$origin_inf==inf_id),]
+  dat <- pruned_infection_record[origin_inf==inf_id0]
   # Determine infector ID
   infector <- unique(dat$infector)
   # Determine who was infected over the course of this infection
@@ -175,15 +177,15 @@ populate.SLiM.table <- function(pruned_infection_record, inf_id) {
   # Determine the infector type
   infector_type <- substring(infector,1,1)
   # Determine when these infections began in Ross-Macdonald sim time
-  RM_start_times <- as.integer(dat$start_t)
+  RM_start_times <- dat$start_t
   # If not a seed infection...
-  if (length(grep("seed", inf_id))==0) {
+  if (inf_id0 != 0) {
     # Determine origin of inf_id
-    origin <- pruned_infection_record[pruned_infection_record$inf_id==inf_id,"origin_inf"]
+    origin <- pruned_infection_record[inf_id==inf_id0,"origin_inf"]
     # Determine infector id
     infector_id <- substring(infector, 2)
     # Determine when the infector was infected in RM time
-    infector_start_time <- as.integer(pruned_infection_record[pruned_infection_record$inf_id==inf_id, "start_t"])
+    infector_start_time <- as.integer(pruned_infection_record[inf_id==inf_id0, "start_t"])
     # If a seed infection...
   } else {
     origin <- NA
@@ -191,15 +193,15 @@ populate.SLiM.table <- function(pruned_infection_record, inf_id) {
     infector_start_time <- NA
   }
   # Determine when the infections began wrt to infector's status
-  start_times <- suppressWarnings(RM_start_times - infector_start_time)
+  start_times <- RM_start_times - infector_start_time
   # Return output
-  output <- c(inf_id,
-              origin,
-              infector_type,
-              infector_id,
-              paste(infected, collapse=";"),
-              paste(RM_start_times, collapse=";"),
-              paste(start_times, collapse=";"))
+  output <- cbind.data.frame(inf_id0,
+                             origin,
+                             infector_type,
+                             infector_id,
+                             paste(infected, collapse=";"),
+                             paste(RM_start_times, collapse=";"),
+                             paste(start_times, collapse=";"))
   return(output)
 }
 
