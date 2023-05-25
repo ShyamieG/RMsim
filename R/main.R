@@ -463,11 +463,11 @@ run.RM <- function(N_h,
             n_hypno[new_inf_hosts] <- n_hypno[new_inf_hosts] - n_hyps
             rm(origins_infs, n_hyps)
           };rm(new_inf_hosts)
+          # set all empty or NA entries in the hypnozoite reservoir to NULL
+          no_hyp <- unique(c(names(which(lapply(hyp_reservoir, length) == 0)), names(which(is.na(unlist(hyp_reservoir))))))
+          hyp_reservoir[no_hyp] <- NULL;names(hyp_reservoir[no_hyp]) <- no_hyp;rm(no_hyp)
         }
       }
-      # set all empty or NA entries in the hypnozoite reservoir to NULL
-      no_hyp <- unique(c(names(which(lapply(hyp_reservoir, length) == 0)), names(which(is.na(unlist(hyp_reservoir))))))
-      hyp_reservoir[no_hyp] <- NULL;names(hyp_reservoir[no_hyp]) <- no_hyp;rm(no_hyp)
       # -- Step 3 - Infected individuals clear infections ----
       no_longer_infected <- c()
       for (type in c("h", "v")) {
