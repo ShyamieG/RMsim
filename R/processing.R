@@ -1,3 +1,4 @@
+#' @import data.table
 #' @title Sample infected individuals from a Ross-Macdonald simulation
 #' @description Adds events to the infection record representing samples taken from infected individuals, according to user-specified parameters.
 #' @usage sample.RM(RM_out, time_step, population, proportion = NULL, number = NULL, sample_post_lag = TRUE, resample_possible = TRUE, sort_events = TRUE)

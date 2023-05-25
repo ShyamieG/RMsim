@@ -1,3 +1,4 @@
+#' @import data.table
 #' @export
 run.RM <- function(N_h,
                    N_h_t0=NULL,
