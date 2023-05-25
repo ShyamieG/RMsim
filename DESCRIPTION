@@ -6,9 +6,9 @@ Authors@R:
            comment = c(ORCID = "0000-0002-2608-8472"))
 Description: This package performs stochastic simulations of infection scenarios under Ross-Macdonald models.
 Imports:
-	furrr,
-	MESS,
-	pdqr
+	'MESS',
+	'pdqr',
+	'data.table'
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
