@@ -211,7 +211,7 @@ populate.SLiM.table <- function(pruned_infection_record, inf_id) {
                              paste(infected, collapse=";"),
                              paste(RM_start_times, collapse=";"),
                              paste(start_times, collapse=";"))
-  return(output)
+  return(as.data.frame(output))
 }
 
 # 'rewinds' a Ross-Macdonald simulation by removing any events beyond the specified runtime
