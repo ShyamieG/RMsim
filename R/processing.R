@@ -155,19 +155,20 @@ generate.SLiM.input <- function(pruned_infection_record, sim_params) {
                                             pruned_infection_record=pruned_infection_record)))
   colnames(output) <- c("infection_idx", "infection_source", "infector_type", "infector_id", "infected_ids", "RM_time_start", "inf_time_start")
   # fill in infection start times
-  for (infector_type in c("h", "v")) {
-    seed_infs <- intersect(grep("NA", output$inf_time_start), which(output$infector_type==toupper(infector_type)))
+  for (infector_type0 in c("h", "v")) {
+    seed_infs <- intersect(grep("NA", output$inf_time_start), which(output$infector_type==toupper(infector_type0)))
     if (length(seed_infs) > 0) {
-      infected_type <- c("v", "h")[-match(infector_type, c("v", "h"))]
-      trans_prob_distr <- (1-sim_params[paste0(infector_type, "_rec_rate"), 1])^(1:(sim_params[paste0(infector_type, "_max_duration"), 1])) * sim_params["bite_rate", 1] * sim_params[paste0("raw_", infector_type, infected_type, "_trans_rate"), 1]
-      trans_prob_distr[1:(sim_params[paste0(infector_type, "_lag"), 1]-1)] <- 0
-      trans_prob_distr <- as.data.frame(cbind(1:sim_params[paste0(infector_type, "_max_duration"), 1], trans_prob_distr));colnames(trans_prob_distr) <- c("x", "prob")
+      infected_type <- c("v", "h")[-match(infector_type0, c("v", "h"))]
+      trans_prob_distr <- (1-sim_params[paste0(infector_type0, "_rec_rate"), 1])^(1:(sim_params[paste0(infector_type0, "_max_duration"), 1])) * sim_params["bite_rate", 1] * sim_params[paste0("raw_", infector_type0, infected_type, "_trans_rate"), 1]
+      trans_prob_distr[1:(sim_params[paste0(infector_type0, "_lag"), 1]-1)] <- 0
+      trans_prob_distr <- as.data.frame(cbind(1:sim_params[paste0(infector_type0, "_max_duration"), 1], trans_prob_distr));colnames(trans_prob_distr) <- c("x", "prob")
       trans_prob_distr <- pdqr::new_r(trans_prob_distr, type="discrete")
       for (i in seed_infs) {
         start_times <- unlist(strsplit(unlist(output[i, "inf_time_start"])[[1]], split=";"))
         output[i, inf_time_start := paste(trans_prob_distr(length(start_times)), collapse=";")]
-        output[i, infection_idx := paste0(infector_type, '-seed')]
+        output[i, infection_idx := paste0(toupper(infector_type0), '-seed')]
       }
+      output[infection_source == 0, infection_source := paste0(toupper(infector_type0), '-seed')]
     }
   }
   return(as.data.frame(output))
