@@ -143,6 +143,13 @@ prune.infection.record <- function(infection_record) {
 #' @export
 # convert pruned output to format needed by SLiM-based pipeline
 generate.SLiM.input <- function(pruned_infection_record, sim_params) {
+  no_params_msg <- "'sim_params' must be specified (use the 'input_parameters' value from the relevant run.RM() output)."
+  if (!exists("sim_params")) {
+    stop(no_params_msg)
+  } else if (is.null(sim_params)) {
+    stop(no_params_msg)
+  }
+
   output <- data.table::data.table(t(sapply(X=unique(pruned_infection_record$origin_inf),
                                             FUN=populate.SLiM.table,
                                             pruned_infection_record=pruned_infection_record)))
@@ -163,7 +170,7 @@ generate.SLiM.input <- function(pruned_infection_record, sim_params) {
       }
     }
   }
-  return(output)
+  return(as.data.frame(output))
 }
 
 # sub-function of generate.SLiM.input()
