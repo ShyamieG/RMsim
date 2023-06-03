@@ -1,21 +1,21 @@
 #' @import data.table
 #' @title Sample infected individuals from a Ross-Macdonald simulation
-#' @description Adds events to the infection record representing samples taken from infected individuals, according to user-specified parameters.
+#' @description Adds events to the infection record representing samples taken from infected individuals.
 #' @usage sample.RM(RM_out, time_step, population, proportion = NULL, number = NULL, sample_post_lag = TRUE, resample_possible = TRUE, sort_events = TRUE)
 #' @details
-#' The sampling of infected individuals is represented by a unique type of event that is included in the infection record of a Ross-Macdonald simulation. This function allows users to define the sampling scheme by specifying the time step when infected individuals should be sampled, which population (host, vector, or both) to draw samples from, whether a certain proportion of the infected population or a fixed number of individuals should be sampled, and if samples should only be drawn from individuals that are beyond the 'lag' period of their infection. Multiple samples can be drawn from the same infectious individual if `resample_possible` is set to TRUE. If `sort_events` is set to TRUE (which it is by default) the updated infection record will be sorted by `start_t` (infection start time or sample time).
+#' The sampling of infected individuals is represented by a unique type of event that is included in the infection record. This function allows users to define the sampling scheme by specifying the time step when infected individuals should be sampled, which population (host, vector, or both) to draw samples from, whether a certain proportion of the infected population or a fixed number of individuals should be sampled, and if samples should only be drawn from individuals that are beyond the 'lag' period of their infection. Multiple samples can be drawn from the same individual if `resample_possible` is set to TRUE. If `sort_events` is set to TRUE (which it is by default) the updated infection record will be sorted by `start_t` (infection start time or sample time).
 #' @param RM_out object containing the results of a Ross-Macdonald simulation (output of `run.RM()`)
-#' @param time_step the time step at which infected samples should be drawn
+#' @param time_step the time step (i.e. simulation day) at which infected samples should be drawn
 #' @param population either 'H' (host) or 'V' (vector); the population to draw samples from
 #' @param proportion if specified, the proportion of the total infected population to sample
 #' @param number if specified, the number of infected individuals to sample
 #' @param sample_post_lag if TRUE, only individuals that are beyond the infection lag phase can be sampled. Default is TRUE.
-#' @param resample_possible if TRUE, infected individuals can be sampled multiple times at the same or different time points. Default is FALSE.
+#' @param resample_possible if TRUE, the same individual can be sampled multiple times. Default is FALSE.
 #' @param sort_events if TRUE, the updated infection record with new sampling events will be sorted by `start_t`. Default is TRUE.
 #' @examples
 #' ## add samples to the basic Ross-Macdonald simulation example
-#'  set.seed(1234)
-#'  RM_sampled <- sample.RM(RM_out = RMsim::RM_out_basic_sim, time_step = 1000, population = "H", number = 5, sort_events = FALSE)
+#'  set.seed(123456)
+#'  RM_sampled <- sample.RM(RM_out = RMsim::sim3, time_step = 1000, population = "H", number = 5, sort_events = FALSE)
 #'  tail(RM_sampled$infection_record)
 #' @export
 sample.RM <- function(RM_out,

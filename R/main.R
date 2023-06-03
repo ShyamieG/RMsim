@@ -1,32 +1,32 @@
 #' @import data.table
 #' @title Run Ross-Macdonald simulation
-#' @description Simulates an infection scenario based on a Ross-Macdonald model given a set of user-specified parameters.
-#' @usage run.RM(N_h, N_h_t0=NULL, N_v, N_v_t0=NULL, runtime, bite_rate, raw_hv_trans_rate=NULL, raw_vh_trans_rate=NULL, eff_hv_trans_rate=NULL, eff_vh_trans_rate=NULL, h_rec_rate, v_rec_rate, h_lag, v_lag, h_max_duration, v_max_duration, mean_hyp=0, hyp_act_rate=NULL, hyp_death_rate=NULL, prev_sim_output=NULL, verbose=TRUE)
+#' @description Simulates an infection scenario based on a Ross-Macdonald model given a set of user-specified parameters. These include fundamental Ross-Macdonald parameters such as bite rate, infection transmission rates, recovery rates, and host to vector ratio, as well as non-standard parameters such as the number of seed infections, simulation duration, duration of lag period, maximum infection duration, and parameters governing hypnozoite behaviour and dormancy (see Arguments for details). At present, this framework does not simulate complex infections.
+#' @usage run.RM(N_h, N_h_t0, N_v, N_v_t0, runtime, bite_rate, raw_hv_trans_rate, raw_vh_trans_rate, eff_hv_trans_rate, eff_vh_trans_rate, h_rec_rate, v_rec_rate, h_lag, v_lag, h_max_duration, v_max_duration, mean_hyp = 0, hyp_act_rate, hyp_death_rate, prev_sim_output = NULL, verbose = TRUE)
 #' @details
-#' `run.RM()` is the main function of the RMsim package. It simulates an infection scenario under an agent-based Ross-Macdonald model given a set of user-specified parameters.\cr\cr
-#' @param N_h host population size
-#' @param N_h_t0 number of infected hosts to seed the simulation. `N_h_t0` or `N_v_t0` (or both) must be non-zero. Default is NULL.
-#' @param N_v vector population size
-#' @param N_v_t0 number of infected vectors to seed the simulation. `N_h_t0` or `N_v_t0` (or both) must be non-zero. Default is NULL.
+#' `run.RM()` is the main function of the RMsim package. It simulates an infection scenario under an agent-based Ross-Macdonald model given a set of user-specified parameters.
+#' @param N_h host population size (number of individuals)
+#' @param N_h_t0 number of infected hosts to seed the simulation. `N_h_t0` or `N_v_t0` (or both) must be non-zero.
+#' @param N_v vector population size (number of individuals)
+#' @param N_v_t0 number of infected vectors to seed the simulation. `N_h_t0` or `N_v_t0` (or both) must be non-zero.
 #' @param runtime number of time steps (i.e. days) to simulate
-#' @param bite_rate the per-day probability that a vector will bite a host, or the mean number of bites the vector population delivers each day. The number of bites is drawn from a Poisson distribution with mean `bite_rate`.
-#' @param raw_hv_trans_rate the probability that an infected host will pass the infection on to a vector when bitten. Either `raw_hv_trans_rate` or `eff_hv_trans_rate` must be specified. Default is NULL.
-#' @param raw_vh_trans_rate the probability that an infected vector will pass the infection on to a host when it bites. Either `raw_vh_trans_rate` or `eff_vh_trans_rate` must be specified. Default is NULL.
-#' @param eff_hv_trans_rate the effective host-to-vector transmisson rate, accounting for the initial lag period when the host in not infectious (`h_lag`) and the maximum duration of any host infection (`h_max_duration`) (see [calc.trans.rates()]). Either `raw_hv_trans_rate` or `eff_hv_trans_rate` must be specified. Default is NULL.
-#' @param eff_vh_trans_rate the effective vector-to-host transmisson rate, accounting for the initial lag period when the vector in not infectious (`v_lag`) and the maximum duration of any vector infection (`v_max_duration`) (see [calc.trans.rates()]). Either `raw_vh_trans_rate` or `eff_vh_trans_rate` must be specified. Default is NULL.
-#' @param h_rec_rate the per-day probability that an infected host will recover (or die and be replaced: i.e. transition to the uninfected and susceptible state)
-#' @param v_rec_rate the per-day probability that an infected vector will recover (or die and be replaced: i.e. transition to the uninfected and susceptible state)
-#' @param h_lag number of days that a newly infected host remains non-infectious
-#' @param v_lag number of days that a newly infected vector remains non-infectious
+#' @param bite_rate the mean number of hosts bitten per vector per day. The number of bites is drawn from a Poisson distribution with a lambda of `bite_rate`.
+#' @param raw_hv_trans_rate probability that an infectious vector biting a susceptible host will lead to a transmission event. Either `raw_hv_trans_rate` or `eff_hv_trans_rate` must be specified.
+#' @param raw_vh_trans_rate probability that an infectious host being bitten by a susceptible vector will lead to a transmission event. Either `raw_vh_trans_rate` or `eff_vh_trans_rate` must be specified.
+#' @param eff_hv_trans_rate the effective host-to-vector transmisson rate, accounting for the initial lag period when the host in not infectious (`h_lag`) and the maximum duration of any host infection (`h_max_duration`) (see [calc.trans.rates()]). Either `raw_hv_trans_rate` or `eff_hv_trans_rate` must be specified.
+#' @param eff_vh_trans_rate the effective vector-to-host transmisson rate, accounting for the initial lag period when the vector is not infectious (`v_lag`) and the maximum duration of any vector infection (`v_max_duration`) (see [calc.trans.rates()]). Either `raw_vh_trans_rate` or `eff_vh_trans_rate` must be specified.
+#' @param h_rec_rate the per day probability that an infected host will recover (or die and be replaced)
+#' @param v_rec_rate the per day probability that an infected vector will recover (or die and be replaced)
+#' @param h_lag number of days it takes for a host to become contagious post infection
+#' @param v_lag number of days it takes for a vector to become contagious post infection
 #' @param h_max_duration maximum number of days that a host infection can last
 #' @param v_max_duration maximum number of days that a host infection can last
 #' @param mean_hyp mean number of hypnozoites generated by a vector-transmitted host infection. The number of hypnozoites is chosen from a geometric distrbution. Default is 0, meaning hypnozoites are not enabled by default.
-#' @param hyp_act_rate the per-day probability that a dormant hypnozoite activates, thereby initiating a host infection. Must be specified if `mean_hyp` is non-zero. Default is NULL.
-#' @param hyp_death_rate the per-day probability that a dormant hypnozoite dies. Must be specified if `mean_hyp` is non-zero. Default is NULL.
+#' @param hyp_act_rate the per day probability that a dormant hypnozoite activates, thereby initiating a host infection. Must be specified if `mean_hyp` is non-zero.
+#' @param hyp_death_rate the per day probability that a dormant hypnozoite dies. Must be specified if `mean_hyp` is non-zero.
 #' @param prev_sim_output output of a previous simulation to continue from. Default is NULL.
 #' @param verbose should messages about simplifying steps be enabled? Default is TRUE.
-#' @returns A list object containing the user-specified input parameters ('input_parameters'); the calculated Ross-Macdonald parameters ('RM_parameters'); an infection record ('infection_record'); a vector that summarizes the infection status of each individual ('inf_age'); a data frame that records the proportion of infected hosts and vectors at each simulated time step.\cr\cr
-#' If hypnozoites are enabled, the output of this function will also include a list representing each host's current hypnozoite reservoir ('hyp_reservoir').\cr\cr
+#' @returns A named list containing the user-specified input parameters (`input_parameters`); the calculated Ross-Macdonald parameters (`RM_parameters`); an infection record (`infection_record`); a vector that summarizes the infection status of each individual ('inf_age'); a data frame that records the proportion of infected hosts and vectors at each simulated time step.\cr\cr
+#' If hypnozoites are enabled, the output of this function will also include a list representing each host's current hypnozoite reservoir (`hyp_reservoir`).
 #' @examples
 #' ## run a simple simulation without dormancy (i.e. no hypnozoites)
 #'   set.seed(123456)
