@@ -17,9 +17,9 @@ calc.RM.params(N_h, N_v, bite_rate, eff_hv_trans_rate, eff_vh_trans_rate, h_rec_
 
 \item{eff_vh_trans_rate}{'effective' vector-to-host transmission rate (see \code{\link[=calc.trans.rates]{calc.trans.rates()}})}
 
-\item{h_rec_rate}{per day host recovery rate}
+\item{h_rec_rate}{the per day probability that an infected host will recover (or die and be replaced)}
 
-\item{v_rec_rate}{per day vector recovery rate (or, more realistically, per day vector death rate)}
+\item{v_rec_rate}{the per day probability that an infected vector will recover (or die and be replaced)}
 }
 \value{
 A named list where \code{h_inf_rate} is the host infection rate, \code{v_inf_rate} is the vector infection rate, \code{H_eq} is the expected proportion of the host population that is infected at equilibrium, and \code{V_eq} is the expected proportion of the vector population that is infected at equilibrium.
@@ -28,7 +28,7 @@ A named list where \code{h_inf_rate} is the host infection rate, \code{v_inf_rat
 Calculates the Ross-Macdonald host and vector infection rates, as well as the host and vector infected proportions, for a given set of epidemiological parameters.
 }
 \details{
-This function implements the fundamental Ross-Macdonald equations to calculate the proportion of the host and vector populations that are infected at equilibrium. It is used by the main \code{run.RM()} function as well as plotting functions \code{plot.inf.over.time()} and \code{plot.inf.histogram()}. It is also useful for quickly checking if a given set of epidemiological parameters is plausible/possible.
+This function calculates the proportion of the host and vector populations that are infected at equilibrium from Ross-Macdonald equations. It is used by the main \code{run.RM()} function as well as plotting functions \code{plot.inf.over.time()} and \code{plot.inf.histogram()}. It is also useful for quickly checking if a given set of epidemiological parameters is plausible/possible.
 }
 \examples{
 ## calculate Ross-Macdonald parameters corresponding to a host to vector ratio of 1:5, a per day vector bite rate of 0.3, an 'effective' host to vector transmission rate of 0.1, an 'effective' vector to host transmission rate of 0.2, a per day host recovery rate of 0.01, and a per day vector death rate of 0.05

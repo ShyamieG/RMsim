@@ -7,31 +7,31 @@
 calc.R0(RM_out, population, epoch)
 }
 \arguments{
-\item{RM_out}{object containing the results of a Ross-Macdonald simulation (output of \code{run.RM()})}
+\item{RM_out}{named list containing the results of a Ross-Macdonald simulation (output of \code{run.RM()})}
 
 \item{population}{either "H" or "V" for the host or vector population, respectively}
 
 \item{epoch}{a vector of length 2 specifying the time range that should be considered - defaults to the entire simulated time period}
 }
 \value{
-The R0 value (numeric type)
+The R0 value
 }
 \description{
 Calculates the basic reproductive number (R0) for a given Ross-Macdonald simulation for either hosts or vectors.
 }
 \details{
-This function determines and returns the average number of hosts that an infected host goes on to infect OR the average number of vectors that an infected vector goes on to infect. If specified, the function will only calculate this value for infections that started within a particular time range (epoch).
+This function returns the average number of hosts that an infected host goes on to infect OR the average number of vectors that an infected vector goes on to infect. If specified, the function will only calculate this value for infections that started within a particular time range (epoch).
 }
 \examples{
 ## calculate R0 value for hosts in the example dataset
- calc.R0(RM_out = RMsim::RM_out_basic_sim, population="H")
+ calc.R0(RM_out = RMsim::sim3, population="H")
 
  # returns:
 
- [1] 0.9935829
- calc.R0(RM_out = RMsim::RM_out_basic_sim, population="H", epoch=c(1, 300))
+ [1] 1.000079
+ calc.R0(RM_out = RMsim::sim3, population="H", epoch=c(1, 300))
 
  # returns:
 
- [1] 1.377483
+ [1] 2.201474
 }

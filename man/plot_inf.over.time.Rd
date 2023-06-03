@@ -2,12 +2,14 @@
 % Please edit documentation in R/plotting.R
 \name{plot_inf.over.time}
 \alias{plot_inf.over.time}
-\title{Plot infected proportion over time}
+\title{Plot number or proportion of infected individuals over time}
 \usage{
-plot_inf.over.time(RM_out, scale_y_axis = T, plot_hosts = T, plot_vectors = T, h_col = "#9A5EA1", v_col = "#98823C")
+plot_inf.over.time(RM_out, type = "proportion", scale_y_axis = TRUE, plot_hosts = TRUE, plot_vectors = TRUE, h_col = "#9A5EA1", v_col = "#98823C")
 }
 \arguments{
 \item{RM_out}{object containing the results of a Ross-Macdonald simulation (output of \code{run.RM()})}
+
+\item{type}{what kind of y-values to plot; either \code{number} or \code{proportion}}
 
 \item{scale_y_axis}{if TRUE, the y-axis is scaled according to the values in RM_out. If FALSE, the y-axis range is set to c(0,1). Default is TRUE.}
 
@@ -20,14 +22,15 @@ plot_inf.over.time(RM_out, scale_y_axis = T, plot_hosts = T, plot_vectors = T, h
 \item{v_col}{desired colour for plotting the vector data}
 }
 \description{
-Generates a plot of the actual and expected proportions of the host and vector populations that are infected over the duration of the simulation.
+Generates a plot of the actual and expected numbers or proportions of hosts that are infected over the simulated time period.
 }
 \details{
-Parses the result of \code{run.RM()} to plot the proportion of host and vector population that are infected at each time step of the simulation. The expected values of these parameters, calculated from the underlying Ross-Macdonald equations, are also plotted to facilitate comparison.
+Parses the result of \code{run.RM()} to plot the proportion of host and vector population that are infected at each time step of the simulation. The expected values of these parameters, calculated from the underlying Ross-Macdonald equations, are plotted as dashed lines.
 }
 \examples{
 ## plot the results of the basic Ross-Macdonald simulation example
- plot_inf.over.time(RMsim::RM_out_basic_sim)
- plot_inf.over.time(RMsim::RM_out_basic_sim, scale_y_axis = F)
- plot_inf.over.time(RMsim::RM_out_basic_sim, plot_hosts = F)
+ plot_inf.over.time(RMsim::sim3, type="number")
+ plot_inf.over.time(RMsim::sim3, type="proportion")
+ plot_inf.over.time(RMsim::sim3, type="proportion", scale_y_axis = FALSE)
+ plot_inf.over.time(RMsim::sim3, type="proportion", plot_hosts = FALSE)
 }

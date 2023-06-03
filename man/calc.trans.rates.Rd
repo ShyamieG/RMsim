@@ -11,11 +11,11 @@ calc.trans.rates(lag, max_duration, recovery_rate, raw_trans_rate = NULL, eff_tr
 
 \item{max_duration}{maximum number of days that an infection can last}
 
-\item{recovery_rate}{per day rate of individual recovery from infection}
+\item{recovery_rate}{the per day probability that an infected host will recover (or die and be replaced: i.e. transition to the uninfected and susceptible state)}
 
 \item{raw_trans_rate}{probability that an infectious bite leads to a transmission event (used in the main simulation function \code{run.RM()})}
 
-\item{eff_trans_rate}{overall probability that an infection will be transmitted (used for Ross-Macdonald parameter calculations)}
+\item{eff_trans_rate}{the effective transmisson rate, accounting for the initial lag period when the individual is not infectious (\code{lag}) and the maximum duration of any infection (\code{max_duration}) (used for Ross-Macdonald parameter calculations)}
 }
 \value{
 The corresponding 'raw' or 'effective' transmission rate (float).
@@ -24,10 +24,10 @@ The corresponding 'raw' or 'effective' transmission rate (float).
 Converts 'raw' transmission rates to 'effective' transmission rates and vice versa.
 }
 \details{
-Because RMsim allows for a lag between infection and contagiousness, as well as an upper limit on the duration of infection, we distinguish between 'raw' transmission rates and 'effective' transmission rates. This function converts between these two types of transmission rate.\cr\cr
+Because RMsim allows for a lag between infection and infectiousness, as well as an upper limit on the duration of infection, we distinguish between 'raw' transmission rates and 'effective' transmission rates. This function converts between these two types of transmission rate.\cr\cr
 The 'raw' transmission rate is the probability that an infectious bite leads to a transmission event. The 'raw' transmission rate is used by the main Ross-Macdonald simulation function \code{run.RM()}.\cr\cr
-The 'effective' transmission rate represents the overall probability that an infection will be transmitted given that transmission cannot occur during the \code{lag} period and after the \code{max_duration} period. The 'effective' transmission rate is used to calculate the expected Ross-Macdonald parameters, including the expected proportion of infected hosts and vectors at equilibrium.\cr\cr
-Either 'raw_trans_rate' or 'eff_trans_rate' must be specified, but both cannot be specified at the same time.
+The 'effective' transmission rate represents the overall probability that an infection will be transmitted given that transmission cannot occur during the \code{lag} period or after the \code{max_duration} period. The 'effective' transmission rate is used to calculate the expected Ross-Macdonald parameters, including the expected proportion of infected hosts and vectors at equilibrium.\cr\cr
+Either 'raw_trans_rate' or 'eff_trans_rate' must be specified, but not both.
 }
 \examples{
 ## calculate the 'effective' transmission rate, given a 'raw' rate of 0.2, infection lag time of 7 days, maximum infection duration of 60 days, and a per-day recovery rate of 0.05
