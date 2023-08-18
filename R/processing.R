@@ -47,7 +47,7 @@ sample.RM <- function(RM_out,
   infection_record <- RM_out$infection_record
 
   if (input_parameters["t_end", ncol(input_parameters)] < time_step) {
-    stop("Sample time ('time_step') must fall within the time course of the simulation.")
+    stop("Sample time ('time_step') must fall within the simulation period.")
   }
 
   phase <- which(input_parameters["t_start", ] <= time_step & input_parameters["t_end", ] >= time_step)
@@ -81,7 +81,7 @@ sample.RM <- function(RM_out,
   }
   if (!is.null(number)) {
     if (nrow(dat) < number & nrow(dat) > 0 & resample_possible == FALSE) {
-      warning(paste0("Not enough infected individuals present to sample ", number, ". Sampling all ", nrow(dat), " infections instead."))
+      warning(paste0("Not enough infected individuals at time step ", time_step," to sample ", number, ". Sampling all ", nrow(dat), " infections instead."))
       sample.size <- nrow(dat)
     } else if (nrow(dat) == 0) {
       sample.size <- nrow(dat)
@@ -149,26 +149,39 @@ generate.SLiM.input <- function(pruned_infection_record, sim_params) {
   } else if (is.null(sim_params)) {
     stop(no_params_msg)
   }
-
-  output <- data.table::data.table(t(sapply(X=unique(pruned_infection_record$origin_inf),
-                                            FUN=populate.SLiM.table,
-                                            pruned_infection_record=pruned_infection_record)))
-  colnames(output) <- c("infection_idx", "infection_source", "infector_type", "infector_id", "infected_ids", "RM_time_start", "inf_time_start")
-  # fill in infection start times
+  output <- data.table::data.table(do.call(rbind, lapply(X = unique(pruned_infection_record$origin_inf),
+                                                         FUN = populate.SLiM.table, pruned_infection_record = pruned_infection_record)))
+  colnames(output) <- c("infection_idx", "infection_source",
+                        "infector_type", "infector_id", "infected_ids", "RM_time_start",
+                        "inf_time_start")
   for (infector_type0 in c("h", "v")) {
-    seed_infs <- intersect(grep("NA", output$inf_time_start), which(output$infector_type==toupper(infector_type0)))
+    seed_infs <- intersect(grep("NA", output$inf_time_start),
+                           which(output$infector_type == toupper(infector_type0)))
     if (length(seed_infs) > 0) {
-      infected_type <- c("v", "h")[-match(infector_type0, c("v", "h"))]
-      trans_prob_distr <- (1-sim_params[paste0(infector_type0, "_rec_rate"), 1])^(1:(sim_params[paste0(infector_type0, "_max_duration"), 1])) * sim_params["bite_rate", 1] * sim_params[paste0("raw_", infector_type0, infected_type, "_trans_rate"), 1]
-      trans_prob_distr[1:(sim_params[paste0(infector_type0, "_lag"), 1]-1)] <- 0
-      trans_prob_distr <- as.data.frame(cbind(1:sim_params[paste0(infector_type0, "_max_duration"), 1], trans_prob_distr));colnames(trans_prob_distr) <- c("x", "prob")
-      trans_prob_distr <- pdqr::new_r(trans_prob_distr, type="discrete")
+      infected_type <- c("v", "h")[-match(infector_type0,
+                                          c("v", "h"))]
+      trans_prob_distr <- (1 - sim_params[paste0(infector_type0,
+                                                 "_rec_rate"), 1])^(1:(sim_params[paste0(infector_type0,
+                                                                                         "_max_duration"), 1])) * sim_params["bite_rate",
+                                                                                                                             1] * sim_params[paste0("raw_", infector_type0,
+                                                                                                                                                    infected_type, "_trans_rate"), 1]
+      trans_prob_distr[1:(sim_params[paste0(infector_type0,
+                                            "_lag"), 1] - 1)] <- 0
+      trans_prob_distr <- as.data.frame(cbind(1:sim_params[paste0(infector_type0,
+                                                                  "_max_duration"), 1], trans_prob_distr))
+      colnames(trans_prob_distr) <- c("x", "prob")
+      trans_prob_distr <- pdqr::new_r(trans_prob_distr,
+                                      type = "discrete")
       for (i in seed_infs) {
-        start_times <- unlist(strsplit(unlist(output[i, "inf_time_start"])[[1]], split=";"))
-        output[i, inf_time_start := paste(trans_prob_distr(length(start_times)), collapse=";")]
-        output[i, infection_idx := paste0(toupper(infector_type0), '-seed')]
+        start_times <- unlist(strsplit(unlist(output[i,
+                                                     "inf_time_start"])[[1]], split = ";"))
+        output[i, `:=`(inf_time_start, paste(trans_prob_distr(length(start_times)),
+                                             collapse = ";"))]
+        output[i, `:=`(infection_idx, paste0(toupper(infector_type0),
+                                             "-seed"))]
       }
-      output[infection_source == 0, infection_source := paste0(toupper(infector_type0), '-seed')]
+      output[infection_source == 0, `:=`(infection_source,
+                                         paste0(toupper(infector_type0), "-seed"))]
     }
   }
   return(as.data.frame(output))
@@ -204,16 +217,30 @@ populate.SLiM.table <- function(pruned_infection_record, inf_id) {
   # Determine when the infections began wrt to infector's status
   start_times <- RM_start_times - infector_start_time
   # Return output
-  output <- cbind.data.frame(inf_id0,
-                             origin,
-                             infector_type,
-                             infector_id,
-                             paste(infected, collapse=";"),
-                             paste(RM_start_times, collapse=";"),
-                             paste(start_times, collapse=";"))
+  if (length(infector) > 1) {
+    output <- as.data.frame(matrix(ncol=7, nrow=0))
+    for (i in 1:length(infector)) {
+      output[i,] <- cbind.data.frame(inf_id0,
+                                     origin,
+                                     infector_type[i],
+                                     infector_id,
+                                     paste(infected[dat$infector == infector[i]], collapse=";"),
+                                     paste(RM_start_times[dat$infector == infector[i]], collapse=";"),
+                                     paste(start_times[dat$infector == infector[i]], collapse=";"))
+    }
+  } else {
+    output <- cbind.data.frame(inf_id0,
+                               origin,
+                               infector_type,
+                               infector_id,
+                               paste(infected, collapse=";"),
+                               paste(RM_start_times, collapse=";"),
+                               paste(start_times, collapse=";"))
+  }
   output <- apply(output, 2, as.character)
   return(output)
 }
+
 
 # 'rewinds' a Ross-Macdonald simulation by removing any events beyond the specified runtime
 ### TBD - need to modify input/RM parameter table accordingly
