@@ -51,6 +51,9 @@ sample.RM <- function(RM_out,
   }
 
   phase <- which(input_parameters["t_start", ] <= time_step & input_parameters["t_end", ] >= time_step)
+  if (length(phase) == 0) {
+    stop("requested sampling time falls outside of the simulation")
+  }
 
   # Re-name population elements if necessary
   if (any(population == "both")){population <- c("h", "v")}

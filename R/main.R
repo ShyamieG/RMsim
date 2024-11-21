@@ -12,7 +12,7 @@
 #' @param bite_rate the mean number of hosts bitten per vector per day. The number of bites is drawn from a Poisson distribution with a lambda of `bite_rate`.
 #' @param raw_hv_trans_rate probability that an infectious vector biting a susceptible host will lead to a transmission event. Either `raw_hv_trans_rate` or `eff_hv_trans_rate` must be specified.
 #' @param raw_vh_trans_rate probability that an infectious host being bitten by a susceptible vector will lead to a transmission event. Either `raw_vh_trans_rate` or `eff_vh_trans_rate` must be specified.
-#' @param eff_hv_trans_rate the effective host-to-vector transmisson rate, accounting for the initial lag period when the host in not infectious (`h_lag`) and the maximum duration of any host infection (`h_max_duration`) (see [calc.trans.rates()]). Either `raw_hv_trans_rate` or `eff_hv_trans_rate` must be specified.
+#' @param eff_hv_trans_rate the effective host-to-vector transmission rate, accounting for the initial lag period when the host in not infectious (`h_lag`) and the maximum duration of any host infection (`h_max_duration`) (see [calc.trans.rates()]). Either `raw_hv_trans_rate` or `eff_hv_trans_rate` must be specified.
 #' @param eff_vh_trans_rate the effective vector-to-host transmisson rate, accounting for the initial lag period when the vector is not infectious (`v_lag`) and the maximum duration of any vector infection (`v_max_duration`) (see [calc.trans.rates()]). Either `raw_vh_trans_rate` or `eff_vh_trans_rate` must be specified.
 #' @param h_rec_rate the per day probability that an infected host will recover (or die and be replaced)
 #' @param v_rec_rate the per day probability that an infected vector will recover (or die and be replaced)
@@ -229,7 +229,8 @@ run.RM <- function(N_h,
                                    eff_hv_trans_rate=eff_hv_trans_rate,
                                    eff_vh_trans_rate=eff_vh_trans_rate,
                                    h_rec_rate=h_rec_rate,
-                                   v_rec_rate=v_rec_rate)
+                                   v_rec_rate=v_rec_rate,
+                                   h_relapse_rate=hyp_act_rate)
   for (param in names(RM_parameters_temp)) {
     assign(param, RM_parameters_temp[[param]])
   };rm(param, RM_parameters_temp)

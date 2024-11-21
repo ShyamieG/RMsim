@@ -59,7 +59,7 @@ calc.trans.rates <- function(lag,
 
 #' @title Calculate Ross-Macdonald parameters
 #' @description Calculates the Ross-Macdonald host and vector infection rates, as well as the host and vector infected proportions, for a given set of epidemiological parameters.
-#' @usage calc.RM.params(N_h, N_v, bite_rate, eff_hv_trans_rate, eff_vh_trans_rate, h_rec_rate, v_rec_rate)
+#' @usage calc.RM.params(N_h, N_v, bite_rate, eff_hv_trans_rate, eff_vh_trans_rate, h_rec_rate, v_rec_rate, h_relapse_rate)
 #' @details
 #' This function calculates the proportion of the host and vector populations that are infected at equilibrium from Ross-Macdonald equations. It is used by the main `run.RM()` function as well as plotting functions `plot.inf.over.time()` and `plot.inf.histogram()`. It is also useful for quickly checking if a given set of epidemiological parameters is plausible/possible.
 #' @param N_h host population size (number of individuals)
@@ -69,24 +69,25 @@ calc.trans.rates <- function(lag,
 #' @param eff_vh_trans_rate 'effective' vector-to-host transmission rate (see [calc.trans.rates()])
 #' @param h_rec_rate the per day probability that an infected host will recover (or die and be replaced)
 #' @param v_rec_rate the per day probability that an infected vector will recover (or die and be replaced)
+#' @param h_relapse_rate the per day probability of a relapse infection
 #' @returns A named list where `h_inf_rate` is the host infection rate, `v_inf_rate` is the vector infection rate, `H_eq` is the expected proportion of the host population that is infected at equilibrium, and `V_eq` is the expected proportion of the vector population that is infected at equilibrium.
 #' @examples
 #' ## calculate Ross-Macdonald parameters corresponding to a host to vector ratio of 1:5, a per day vector bite rate of 0.3, an 'effective' host to vector transmission rate of 0.1, an 'effective' vector to host transmission rate of 0.2, a per day host recovery rate of 0.01, and a per day vector death rate of 0.05
-#'  calc.RM.params(N_h = 1000, N_v = 5000, bite_rate = 0.2, eff_hv_trans_rate = 0.1, eff_vh_trans_rate = 0.2, h_rec_rate = 0.01, v_rec_rate = 0.05)
+#'  calc.RM.params(N_h = 1000, N_v = 5000, bite_rate = 0.2, eff_hv_trans_rate = 0.1, eff_vh_trans_rate = 0.2, h_rec_rate = 0.01, v_rec_rate = 0.05, h_relapse_rate=0.0001)
 #'
 #'  # returns the following values:
 #'
 #'  $h_inf_rate
-#'  [1] 0.2
+#'  [1] 0.2001
 #'
 #'  $v_inf_rate
 #'  [1] 0.02
 #'
 #'  $H_eq
-#'  [1] 0.8333333
+#'  [1] 0.8334127
 #'
 #'  $V_eq
-#'  [1] 0.25
+#'  [1] 0.2500178
 #' @export
 calc.RM.params <- function(N_h,
                            N_v,
@@ -94,7 +95,11 @@ calc.RM.params <- function(N_h,
                            eff_hv_trans_rate,
                            eff_vh_trans_rate,
                            h_rec_rate,
-                           v_rec_rate) {
+                           v_rec_rate,
+                           h_relapse_rate=NULL) {
+  if (is.null(h_relapse_rate)) {
+    h_relapse_rate = 0
+  }
   h_inf_rate = bite_rate * (N_v/N_h) * eff_vh_trans_rate
   v_inf_rate = bite_rate * eff_hv_trans_rate
   H_eq = (h_inf_rate*v_inf_rate - h_rec_rate*v_rec_rate)/(h_inf_rate*v_inf_rate + v_inf_rate*h_rec_rate)
