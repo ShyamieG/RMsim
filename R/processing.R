@@ -112,8 +112,20 @@ sample.RM <- function(RM_out,
   }
 }
 
+#' @title Prune infection record
+#' @description Removes events from the infection record that do not contribute to the history of the samples.
+#' @usage prune.infection.record(infection_record)
+#' @details
+#' This step starts with the samples resulting from the forward-in-time Ross-Macdonald simulation process (i.e. the results of `run.rm()`) and traces their history back to a seed infection. All infections that did not contribute to the history of the defined sample set can then be eliminated from the record. This allows later forward-in-time steps in the simulation pipeline to be more efficient, as the pruned infection record still contains all the information needed to construct the history of the sampled infections.
+#' @param infection_record Infection record contained within object resulting from a Ross-Macdonald simulation after samples have been defined (output of `run.RM()` after being processed by `sample.RM()`)
+#' @examples
+#' ## add samples to the basic Ross-Macdonald simulation example
+#'  set.seed(123456)
+#'  RM_sampled <- sample.RM(RM_out = RMsim::sim3, time_step = 1000, population = "H", number = 5, sort_events = FALSE)
+#'  nrow(RM_sampled$infection_record)
+#' ## prune infection record
+#'  pruned_inf_record <- prune.infection.record(RM_sampled$infection_record)
 #' @export
-# remove any infections that did not contribute to the sample
 prune.infection.record <- function(infection_record) {
   `%ni%` <- Negate(`%in%`)
   # Determine sample infections
