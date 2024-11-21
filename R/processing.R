@@ -6,7 +6,7 @@
 #' The sampling of infected individuals is represented by a unique type of event that is included in the infection record. This function allows users to define the sampling scheme by specifying the time step when infected individuals should be sampled, which population (host, vector, or both) to draw samples from, whether a certain proportion of the infected population or a fixed number of individuals should be sampled, and if samples should only be drawn from individuals that are beyond the 'lag' period of their infection. Multiple samples can be drawn from the same individual if `resample_possible` is set to TRUE. If `sort_events` is set to TRUE (which it is by default) the updated infection record will be sorted by `start_t` (infection start time or sample time).
 #' @param RM_out object containing the results of a Ross-Macdonald simulation (output of `run.RM()`)
 #' @param time_step the time step (i.e. simulation day) at which infected samples should be drawn
-#' @param population either 'H' (host) or 'V' (vector); the population to draw samples from
+#' @param population either 'H' (host), 'V' (vector), or 'both'; the population to draw samples from
 #' @param proportion if specified, the proportion of the total infected population to sample
 #' @param number if specified, the number of infected individuals to sample
 #' @param sample_post_lag if TRUE, only individuals that are beyond the infection lag phase can be sampled. Default is TRUE.
