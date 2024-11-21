@@ -11,7 +11,7 @@ sample.RM(RM_out, time_step, population, proportion = NULL, number = NULL, sampl
 
 \item{time_step}{the time step (i.e. simulation day) at which infected samples should be drawn}
 
-\item{population}{either 'H' (host) or 'V' (vector); the population to draw samples from}
+\item{population}{either 'H' (host), 'V' (vector), or 'both'; the population to draw samples from}
 
 \item{proportion}{if specified, the proportion of the total infected population to sample}
 
@@ -32,6 +32,6 @@ The sampling of infected individuals is represented by a unique type of event th
 \examples{
 ## add samples to the basic Ross-Macdonald simulation example
  set.seed(123456)
- RM_sampled <- sample.RM(RM_out = RMsim::sim3, time_step = 1000, population = "H", number = 5, sort_events = FALSE)
- tail(RM_sampled$infection_record)
+ RM_sampled <- sample.RM(RM_out = RMsim::sim3, time_step = 1000, population = "H", number = 5, sort_events = FALSE) # sample 5 host infections on day 1000
+ tail(RM_sampled$infection_record) # sample events are added to the end of the infection record because sort_events was set to FALSE
 }

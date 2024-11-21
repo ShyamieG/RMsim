@@ -4,7 +4,7 @@
 \alias{calc.RM.params}
 \title{Calculate Ross-Macdonald parameters}
 \usage{
-calc.RM.params(N_h, N_v, bite_rate, eff_hv_trans_rate, eff_vh_trans_rate, h_rec_rate, v_rec_rate)
+calc.RM.params(N_h, N_v, bite_rate, eff_hv_trans_rate, eff_vh_trans_rate, h_rec_rate, v_rec_rate, h_relapse_rate)
 }
 \arguments{
 \item{N_h}{host population size (number of individuals)}
@@ -20,6 +20,8 @@ calc.RM.params(N_h, N_v, bite_rate, eff_hv_trans_rate, eff_vh_trans_rate, h_rec_
 \item{h_rec_rate}{the per day probability that an infected host will recover (or die and be replaced)}
 
 \item{v_rec_rate}{the per day probability that an infected vector will recover (or die and be replaced)}
+
+\item{h_relapse_rate}{the per day probability of a relapse infection}
 }
 \value{
 A named list where \code{h_inf_rate} is the host infection rate, \code{v_inf_rate} is the vector infection rate, \code{H_eq} is the expected proportion of the host population that is infected at equilibrium, and \code{V_eq} is the expected proportion of the vector population that is infected at equilibrium.
@@ -32,19 +34,19 @@ This function calculates the proportion of the host and vector populations that 
 }
 \examples{
 ## calculate Ross-Macdonald parameters corresponding to a host to vector ratio of 1:5, a per day vector bite rate of 0.3, an 'effective' host to vector transmission rate of 0.1, an 'effective' vector to host transmission rate of 0.2, a per day host recovery rate of 0.01, and a per day vector death rate of 0.05
- calc.RM.params(N_h = 1000, N_v = 5000, bite_rate = 0.2, eff_hv_trans_rate = 0.1, eff_vh_trans_rate = 0.2, h_rec_rate = 0.01, v_rec_rate = 0.05)
+ calc.RM.params(N_h = 1000, N_v = 5000, bite_rate = 0.2, eff_hv_trans_rate = 0.1, eff_vh_trans_rate = 0.2, h_rec_rate = 0.01, v_rec_rate = 0.05, h_relapse_rate=0.0001)
 
  # returns the following values:
 
  $h_inf_rate
- [1] 0.2
+ [1] 0.2001
 
  $v_inf_rate
  [1] 0.02
 
  $H_eq
- [1] 0.8333333
+ [1] 0.8334127
 
  $V_eq
- [1] 0.25
+ [1] 0.2500178
 }

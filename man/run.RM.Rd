@@ -23,7 +23,7 @@ run.RM(N_h, N_h_t0, N_v, N_v_t0, runtime, bite_rate, raw_hv_trans_rate, raw_vh_t
 
 \item{raw_vh_trans_rate}{probability that an infectious host being bitten by a susceptible vector will lead to a transmission event. Either \code{raw_vh_trans_rate} or \code{eff_vh_trans_rate} must be specified.}
 
-\item{eff_hv_trans_rate}{the effective host-to-vector transmisson rate, accounting for the initial lag period when the host in not infectious (\code{h_lag}) and the maximum duration of any host infection (\code{h_max_duration}) (see \code{\link[=calc.trans.rates]{calc.trans.rates()}}). Either \code{raw_hv_trans_rate} or \code{eff_hv_trans_rate} must be specified.}
+\item{eff_hv_trans_rate}{the effective host-to-vector transmission rate, accounting for the initial lag period when the host in not infectious (\code{h_lag}) and the maximum duration of any host infection (\code{h_max_duration}) (see \code{\link[=calc.trans.rates]{calc.trans.rates()}}). Either \code{raw_hv_trans_rate} or \code{eff_hv_trans_rate} must be specified.}
 
 \item{eff_vh_trans_rate}{the effective vector-to-host transmisson rate, accounting for the initial lag period when the vector is not infectious (\code{v_lag}) and the maximum duration of any vector infection (\code{v_max_duration}) (see \code{\link[=calc.trans.rates]{calc.trans.rates()}}). Either \code{raw_vh_trans_rate} or \code{eff_vh_trans_rate} must be specified.}
 
