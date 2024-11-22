@@ -4,7 +4,7 @@
 \alias{generate.SLiM.input}
 \title{Generate SLiM input}
 \usage{
-prune.infection.record(infection_record)
+prune.infection.record(infection_record)z
 }
 \arguments{
 \item{infection_record}{Infection record contained within object resulting from a Ross-Macdonald simulation after samples have been defined (output of \code{run.RM()} after being processed by \code{sample.RM()})}
