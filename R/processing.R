@@ -101,7 +101,7 @@ sample.RM <- function(RM_out,
     } else {
       infs_to_sample <- dat[inf_id %in% sample(dat$inf_id, size=sample.size, replace=F)]
     }
-    inf_ids <- (nrow(infection_record)+1):(nrow(infection_record)+nrow(infs_to_sample))
+    inf_ids <- (max(infection_record$inf_id)+1):(max(infection_record$inf_id)+nrow(infs_to_sample))
     sample_infection_record <- cbind.data.frame(inf_ids, infs_to_sample$inf_id, infs_to_sample$infected, "sample", time_step, time_step);colnames(sample_infection_record) <- colnames(infection_record)
     infection_record <- data.table::rbindlist(list(infection_record, sample_infection_record))
     if (sort_events) {
@@ -113,11 +113,12 @@ sample.RM <- function(RM_out,
 }
 
 #' @title Prune infection record
-#' @description Removes events from the infection record that do not contribute to the history of the samples.
-#' @usage prune.infection.record(infection_record)
+#' @description Removes events from the infection record that do not contribute to the history of the focal infections.
+#' @usage prune.infection.record(infection_record, focal_infections = NULL)
 #' @details
-#' This step starts with the samples resulting from the forward-in-time Ross-Macdonald simulation process (i.e. the results of `run.RM()`) and traces their history back to a seed infection. All infections that did not contribute to the history of the defined sample set can then be eliminated from the record. This allows later forward-in-time steps in the simulation pipeline to be more efficient, as the pruned infection record still contains all the information needed to construct the history of the sampled infections.
-#' @param infection_record Infection record contained within object resulting from a Ross-Macdonald simulation after samples have been defined (output of `run.RM()` after being processed by `sample.RM()`)
+#' This step starts with the output of the forward-in-time Ross-Macdonald simulation process (i.e. the results of [run.RM()]) and traces their history back to a seed infection. All infections that did not contribute to the history of the defined focal set can then be eliminated from the record. This can reduce the computational burden and allows later forward-in-time steps in the simulation pipeline to be more efficient, as the pruned infection record still contains all the information needed to construct the history of the focal infections.
+#' @param infection_record Infection record contained within the list object resulting from a Ross-Macdonald simulation (`infection_record` output of [run.RM()]). Optionally, samples can first be added to this infection record by running [sample.RM()].
+#' @param focal_infections IDs of the specific infections whose history is to be retained. If not specified, this will be set to all infections marked 'sample'. If no samples are present in the infection record, this argument must be explicitly defined.
 #' @examples
 #' ## add samples to the basic Ross-Macdonald simulation example
 #'  set.seed(123456)
@@ -126,19 +127,27 @@ sample.RM <- function(RM_out,
 #' ## prune infection record
 #'  pruned_inf_record <- prune.infection.record(RM_sampled$infection_record)
 #'  nrow(pruned_inf_record) # only 110 unique events are necessary to describe the full infection history of the 5 samples
+#' ## prune infection record without sampling first
+#'  inf_record <- RMsim::sim3$infection_record
+#'  focal_infs <- sample(inf_record$inf_id, size=5)
+#'  pruned_inf_record <- prune.infection.record(inf_record, focal_infs) # set 5 random infections as focal
+#'  nrow(pruned_inf_record) # only 201 unique events are necessary to describe the full infection history of the 5 specified focal infections
+
 #' @export
-prune.infection.record <- function(infection_record) {
+prune.infection.record <- function(infection_record, focal_infections=NULL) {
   `%ni%` <- Negate(`%in%`)
-  # Determine sample infections
-  sample_infections <- infection_record[infected=="sample"]$inf_id
-  if (length(sample_infections) == 0) {
-    stop("There are no samples in this infection record. Did you run sample.RM() first?")
+  # Determine focal infections
+  if (is.null(focal_infections)) {
+    focal_infections <- infection_record[infected=="sample"]$inf_id
+    if (length(focal_infections) == 0) {
+      stop("'focal_infections' was not set and there are no samples in this infection record. Did you forget to run sample.RM() first?")
+    }
   }
   # Determine seed infections
   seed_infs <- infection_record[grep("seed", infector)]$inf_id
   keep_infs <- c()
   # Loop over each sample infection and trace back until a seed infection is reached
-  for (i in sample_infections) {
+  for (i in focal_infections) {
     j_inf_history <- c()
     j <- i
     while (j %ni% c(seed_infs, keep_infs)) {
@@ -150,7 +159,7 @@ prune.infection.record <- function(infection_record) {
     keep_infs[(length(keep_infs)+1):(length(keep_infs)+length(j_inf_history))] <- j_inf_history
   }
   # Keep all focal transmissions
-  keep_infs[(length(keep_infs)+1):(length(keep_infs)+length(sample_infections))] <- sample_infections
+  keep_infs[(length(keep_infs)+1):(length(keep_infs)+length(focal_infections))] <- focal_infections
   # Remove duplicates
   pruned_infection_record <- infection_record[inf_id %in% unique(keep_infs)]
   return(pruned_infection_record)

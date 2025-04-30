@@ -1,6 +1,6 @@
 #' @title Plot number or proportion of infected individuals over time
 #' @description Generates a plot of the actual and expected numbers or proportions of hosts that are infected over the simulated time period.
-#' @usage plot_inf.over.time(RM_out, type = "proportion", scale_y_axis = TRUE, plot_hosts = TRUE, plot_vectors = TRUE, h_col = "#9A5EA1", v_col = "#98823C")
+#' @usage plot.inf.over.time(RM_out, type = "proportion", scale_y_axis = TRUE, plot_hosts = TRUE, plot_vectors = TRUE, h_col = "#9A5EA1", v_col = "#98823C")
 #' @details
 #' Parses the result of `run.RM()` to plot the proportion of host and vector population that are infected at each time step of the simulation. The expected values of these parameters, calculated from the underlying Ross-Macdonald equations, are plotted as dashed lines.
 #' @param RM_out object containing the results of a Ross-Macdonald simulation (output of `run.RM()`)
@@ -12,12 +12,12 @@
 #' @param v_col desired colour for plotting the vector data
 #' @examples
 #' ## plot the results of the basic Ross-Macdonald simulation example
-#'  plot_inf.over.time(RMsim::sim3, type="number")
-#'  plot_inf.over.time(RMsim::sim3, type="proportion")
-#'  plot_inf.over.time(RMsim::sim3, type="proportion", scale_y_axis = FALSE)
-#'  plot_inf.over.time(RMsim::sim3, type="proportion", plot_hosts = FALSE)
+#'  plot.inf.over.time(RMsim::sim3, type="number")
+#'  plot.inf.over.time(RMsim::sim3, type="proportion")
+#'  plot.inf.over.time(RMsim::sim3, type="proportion", scale_y_axis = FALSE)
+#'  plot.inf.over.time(RMsim::sim3, type="proportion", plot_hosts = FALSE)
 #' @export
-plot_inf.over.time <- function(RM_out,
+plot.inf.over.time <- function(RM_out,
                                type=NULL,
                                scale_y_axis=T,
                                plot_hosts=T,
@@ -97,10 +97,10 @@ plot_inf.over.time <- function(RM_out,
 
 #' @title Plot infected proportion at equilibrium
 #' @description Generates a histogram of the actual proportions of the host and vector populations that are infected following a specified burn-in period.
-#' @usage plot_inf.histogram(RM_out, days_of_burn_in, scale_x_axis = TRUE, plot_hosts = TRUE, plot_vectors = TRUE, phases, observed_col = "red")
+#' @usage plot.inf.histogram(RM_out, days_of_burn_in, scale_x_axis = TRUE, plot_hosts = TRUE, plot_vectors = TRUE, phases, observed_col = "red")
 #' @details
 #' Parses the result of `run.RM()` to plot a histogram of the proportion of host and vector population that are infected at each time step of the simulation. Note that these data will be substantially auto-correlated. Nevertheless, this function allows users to visualize how well the results of the stochastic simulation match with the theoretical expectation.\cr\cr
-#' The `days_of_burn_in` and `phases` arguments allow users to specify the time period to be plotted. `days_of_burn_in` should be chosen so as to exclude the initial phase of a simulation when equilibrium has not yet been reached. Viewing the result of [plot_inf.over.time()] can help users choose this value.\cr\cr
+#' The `days_of_burn_in` and `phases` arguments allow users to specify the time period to be plotted. `days_of_burn_in` should be chosen so as to exclude the initial phase of a simulation when equilibrium has not yet been reached. Viewing the result of [plot.inf.over.time()] can help users choose this value.\cr\cr
 #' Values related to the empirical distribution are plotted in the colour specified by `observed_col`; the dashed vertical line represents the mean, and the solid lines represent 1 standard deviation above and below the mean. The expected infected proportion of the population, calculated from the underlying Ross-Macdonald equations, is plotted in black.
 #' @param RM_out object containing the results of a Ross-Macdonald simulation (output of `run.RM()`)
 #' @param days_of_burn_in the number of time steps to discard from the start of the simulation phase in calculating the empirical mean and standard deviation
@@ -112,11 +112,11 @@ plot_inf.over.time <- function(RM_out,
 #' @param observed_col the colour to plot values related to the empirical distribution
 #' @examples
 #' ## plot the results of the basic Ross-Macdonald simulation example
-#'  plot_inf.histogram(RMsim::sim3, days_of_burn_in = 500, phases_per_plot=3)
-#'  plot_inf.histogram(RMsim::sim3, days_of_burn_in = 500, phases_per_plot=3, scale_x_axis = FALSE)
-#'  plot_inf.histogram(RMsim::sim3, days_of_burn_in = 500, phases_per_plot=3, plot_hosts = FALSE)
+#'  plot.inf.histogram(RMsim::sim3, days_of_burn_in = 500, phases_per_plot=3)
+#'  plot.inf.histogram(RMsim::sim3, days_of_burn_in = 500, phases_per_plot=3, scale_x_axis = FALSE)
+#'  plot.inf.histogram(RMsim::sim3, days_of_burn_in = 500, phases_per_plot=3, plot_hosts = FALSE)
 #' @export
-plot_inf.histogram <- function(RM_out,
+plot.inf.histogram <- function(RM_out,
                                days_of_burn_in=NULL,
                                scale_x_axis=T,
                                plot_hosts=T,
