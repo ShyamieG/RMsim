@@ -4,7 +4,7 @@
 \alias{run.RM}
 \title{Run Ross-Macdonald simulation}
 \usage{
-run.RM(N_h, N_h_t0, N_v, N_v_t0, runtime, bite_rate, raw_hv_trans_rate, raw_vh_trans_rate, eff_hv_trans_rate, eff_vh_trans_rate, h_rec_rate, v_rec_rate, h_lag, v_lag, h_max_duration, v_max_duration, mean_hyp = 0, hyp_act_rate, hyp_death_rate, prev_sim_output = NULL, verbose = TRUE)
+run.RM(N_h,N_h_t0, N_v, N_v_t0, runtime, bite_rate, raw_hv_trans_rate, raw_vh_trans_rate, eff_hv_trans_rate, eff_vh_trans_rate, h_rec_rate, v_rec_rate, h_lag, v_lag, h_max_duration, v_max_duration, mean_hyp = 0, hyp_act_rate, hyp_death_rate, prev_sim_output = NULL, XXX, verbose = TRUE)
 }
 \arguments{
 \item{N_h}{host population size (number of individuals)}
@@ -45,19 +45,33 @@ run.RM(N_h, N_h_t0, N_v, N_v_t0, runtime, bite_rate, raw_hv_trans_rate, raw_vh_t
 
 \item{hyp_death_rate}{the per day probability that a dormant hypnozoite dies. Must be specified if \code{mean_hyp} is non-zero.}
 
-\item{prev_sim_output}{output of a previous simulation to continue from. Default is NULL.}
+\item{prev_sim_output}{output of a previous simulation to continue from. See 'Details'. Default is NULL.}
+
+\item{return_proportion_infected}{should the \code{proportion_infected} object be returned in the function output. See 'Details'. Default is TRUE}
+
+\item{proportion_infected_interval}{if \code{return_proportion_infected} is TRUE, how often should the proportion of infected individuals be calculated? See 'Details'. Default is 1 (i.e. every day).}
+
+\item{sampling_df}{a data frame specifying how to sample infections in the simulation. See 'Details'. Default is NULL.}
+
+\item{prune_regularly}{should the infection record be pruned at regular intervals (set with the \code{pruning_interval} argument) to remove events that do not contribute to the history of any samples or active infections? This additional step can save hard disk space and memory when running very long simulations but may not be necessary for shorter simulations. See \code{\link[=prune.infection.record]{prune.infection.record()}} for more details. Default is FALSE.}
+
+\item{pruning_interval}{if \code{prune_regularly} is TRUE, how frequently should this be done? Default is every 10000 days, but this may not be optimal for all cases.}
 
 \item{verbose}{should messages about simplifying steps be enabled? Default is TRUE.}
 }
 \value{
-A named list containing the user-specified input parameters (\code{input_parameters}); the calculated Ross-Macdonald parameters (\code{RM_parameters}); an infection record (\code{infection_record}); a vector that summarizes the infection status of each individual ('inf_age'); a data frame that records the proportion of infected hosts and vectors at each simulated time step.\cr\cr
+A named list containing the user-specified input parameters (\code{input_parameters}); the calculated Ross-Macdonald parameters (\code{RM_parameters}); an infection record (\code{infection_record}); a vector that summarizes the infection status of each individual (\code{inf_age}); if requested with \code{return_proportion_infected}, a data frame that records the proportion of infected hosts and vectors at each simulated time step (\code{proportion_infected}).\cr\cr
 If hypnozoites are enabled, the output of this function will also include a list representing each host's current hypnozoite reservoir (\code{hyp_reservoir}).
 }
 \description{
 Simulates an infection scenario based on a Ross-Macdonald model given a set of user-specified parameters. These include fundamental Ross-Macdonald parameters such as bite rate, infection transmission rates, recovery rates, and host to vector ratio, as well as non-standard parameters such as the number of seed infections, simulation duration, duration of lag period, maximum infection duration, and parameters governing hypnozoite behaviour and dormancy (see Arguments for details). At present, this framework does not simulate complex infections.
 }
 \details{
-\code{run.RM()} is the main function of the RMsim package. It simulates an infection scenario under an agent-based Ross-Macdonald model given a set of user-specified parameters.
+\code{run.RM()} is the main function of the RMsim package. It simulates an infection scenario under an agent-based Ross-Macdonald (RM) model given a set of user-specified parameters.
+The \code{prev_sim_output} argument allows for the simulation parameters to vary temporally (see 'Examples').
+The \code{return_proportion_infected} argument allows users to drop the object that stores the proportion of infected hosts and vectors at every time step. The must be TRUE to use the \code{plot.inf.over.time} and \code{plot.inf.histogram} functions on the resulting object. However, for very long simulations, this object can become extremely large. Therefore, if it is determined that this object is not needed, it might be advisable to set this argument to FALSE to conserve disk space and memory. If TRUE, the frequency with which the proportion of infected individuals is calculated and recorded can be set using \code{proportion_infected_interval}.
+The \code{prune_regularly} and \code{pruning_interval} arguments allow pruning to be done dynamically, while the simulation is running. Similarly, if \code{sampling_df} is specified, sampling will be done dynamically as well. This flexibility can be useful when running very long simulations.
+\code{sample_df} should be a data frame with 1 row per sampling even and 5 or 6 columns having the following names: 'time_step', 'population', 'proportion' and/or 'number', 'sample_post_lag', and 'resample_possible'. See \code{\link[=sample.RM]{sample.RM()}} for details on what these columns should contain. RMsim::sampling_df gives an example of the expected object.
 }
 \examples{
 ## run a simple simulation without dormancy (i.e. no hypnozoites)

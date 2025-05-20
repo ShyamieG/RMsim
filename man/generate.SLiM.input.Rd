@@ -4,7 +4,7 @@
 \alias{generate.SLiM.input}
 \title{Generate SLiM input}
 \usage{
-prune.infection.record(infection_record)z
+generate.SLiM.input(infection_record)
 }
 \arguments{
 \item{infection_record}{Infection record contained within object resulting from a Ross-Macdonald simulation after samples have been defined (output of \code{run.RM()} after being processed by \code{sample.RM()})}
@@ -16,11 +16,5 @@ Produces the input needed for the SLiM simulation phase from the Ross-Macdonald 
 This step starts with the samples resulting from the forward-in-time Ross-Macdonald simulation process (i.e. the results of \code{run.RM()}) and traces their history back to a seed infection. All infections that did not contribute to the history of the defined sample set can then be eliminated from the record. This allows later forward-in-time steps in the simulation pipeline to be more efficient, as the pruned infection record still contains all the information needed to construct the history of the sampled infections.
 }
 \examples{
-## add samples to the basic Ross-Macdonald simulation example
- set.seed(123456)
- RM_sampled <- sample.RM(RM_out = RMsim::sim3, time_step = 1000, population = "H", number = 5, sort_events = FALSE) # sample 5 host infections on day 1000
- nrow(RM_sampled$infection_record) # 234161 individual events in the infection record
-## prune infection record
- pruned_inf_record <- prune.infection.record(RM_sampled$infection_record)
- nrow(pruned_inf_record) # only 110 unique events are necessary to describe the full infection history of the 5 samples
+## TBD
 }

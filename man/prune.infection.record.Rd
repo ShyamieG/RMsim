@@ -4,16 +4,18 @@
 \alias{prune.infection.record}
 \title{Prune infection record}
 \usage{
-prune.infection.record(infection_record)
+prune.infection.record(infection_record, focal_infections = NULL)
 }
 \arguments{
-\item{infection_record}{Infection record contained within object resulting from a Ross-Macdonald simulation after samples have been defined (output of \code{run.RM()} after being processed by \code{sample.RM()})}
+\item{infection_record}{Infection record contained within the list object resulting from a Ross-Macdonald simulation (\code{infection_record} output of \code{\link[=run.RM]{run.RM()}}). Optionally, samples can first be added to this infection record by running \code{\link[=sample.RM]{sample.RM()}}.}
+
+\item{focal_infections}{IDs of the specific infections whose history is to be retained. If not specified, this will be set to all infections marked 'sample'. If no samples are present in the infection record, this argument must be explicitly defined.}
 }
 \description{
-Removes events from the infection record that do not contribute to the history of the samples.
+Removes events from the infection record that do not contribute to the history of the focal infections.
 }
 \details{
-This step starts with the samples resulting from the forward-in-time Ross-Macdonald simulation process (i.e. the results of \code{run.RM()}) and traces their history back to a seed infection. All infections that did not contribute to the history of the defined sample set can then be eliminated from the record. This allows later forward-in-time steps in the simulation pipeline to be more efficient, as the pruned infection record still contains all the information needed to construct the history of the sampled infections.
+This step starts with the output of the forward-in-time Ross-Macdonald simulation process (i.e. the results of \code{\link[=run.RM]{run.RM()}}) and traces their history back to a seed infection. All infections that did not contribute to the history of the defined focal set can then be eliminated from the record. This can reduce the computational burden and allows later forward-in-time steps in the simulation pipeline to be more efficient, as the pruned infection record still contains all the information needed to construct the history of the focal infections.
 }
 \examples{
 ## add samples to the basic Ross-Macdonald simulation example
@@ -23,4 +25,9 @@ This step starts with the samples resulting from the forward-in-time Ross-Macdon
 ## prune infection record
  pruned_inf_record <- prune.infection.record(RM_sampled$infection_record)
  nrow(pruned_inf_record) # only 110 unique events are necessary to describe the full infection history of the 5 samples
+## prune infection record without sampling first
+ inf_record <- RMsim::sim3$infection_record
+ focal_infs <- sample(inf_record$inf_id, size=5)
+ pruned_inf_record <- prune.infection.record(inf_record, focal_infs) # set 5 random infections as focal
+ nrow(pruned_inf_record) # only 201 unique events are necessary to describe the full infection history of the 5 specified focal infections
 }
