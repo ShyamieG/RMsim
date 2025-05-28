@@ -245,6 +245,11 @@ run.RM <- function(N_h,
     }
   }
 
+  # If prune_regularly, warn if there is no sampling_df
+  if (prune_regularly & is.null(sampling_df)) {
+    warning("'pruning_interval' is TRUE, but no 'sampling_df' was specified. Severe biases are likely to arise if sampling is done as a separate step afterwards.")
+  }
+
   # If returning proportion_infected object, ensure that pruning interval is valid
   if (return_proportion_infected) {
     if (!is.numeric(proportion_infected_interval) | proportion_infected_interval < 0 | proportion_infected_interval %% 1 != 0) {
